@@ -80,6 +80,12 @@
 }
 
 @layer base {
+  :root {
+    /* Stronger easing curves than the CSS defaults — per Emil Kowalski. */
+    --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  }
   * {
     @apply border-border outline-ring/50;
   }
@@ -95,6 +101,17 @@
   pre,
   kbd {
     font-family: var(--font-mono);
+  }
+  /* Press feedback on every interactive button — barely visible, always felt. */
+  button,
+  [data-slot="button"] {
+    transition: transform 160ms var(--ease-out-strong);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    button:active,
+    [data-slot="button"]:active {
+      transform: scale(0.97);
+    }
   }
 }
 
@@ -113,5 +130,29 @@
   }
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: #2a2a3a;
+  }
+  /* Marquee — used for the logo strip. linear easing, GPU-only properties. */
+  @keyframes marquee {
+    from { transform: translate3d(0, 0, 0); }
+    to   { transform: translate3d(-50%, 0, 0); }
+  }
+  .marquee-track {
+    animation: marquee 38s linear infinite;
+    will-change: transform;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track { animation: none; }
+  }
+  /* Soft radial spotlight for the hero background. */
+  .hero-spotlight {
+    background:
+      radial-gradient(60% 60% at 80% 0%, rgba(99, 102, 241, 0.18) 0%, transparent 60%),
+      radial-gradient(50% 50% at 0% 100%, rgba(16, 185, 129, 0.06) 0%, transparent 55%);
+  }
+  /* Subtle dotted grid behind the hero. */
+  .grid-bg {
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+    background-size: 24px 24px;
   }
 }
