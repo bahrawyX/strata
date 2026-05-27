@@ -15,11 +15,7 @@ export function CtaBanner({ isAuthed }: { isAuthed: boolean }) {
 
   return (
     <section
-      className="relative overflow-hidden border-y border-[var(--border-subtle)] px-8 py-[120px] text-center"
-      style={{
-        background:
-          "linear-gradient(135deg, #0F0F1A 0%, #0D0D1F 100%)",
-      }}
+      className="cta-bg relative overflow-hidden border-y border-[var(--border-subtle)] px-8 py-[120px] text-center"
       data-screen-label="06 CTA"
     >
       <div

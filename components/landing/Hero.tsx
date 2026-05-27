@@ -6,18 +6,9 @@ export function Hero({ isAuthed }: { isAuthed: boolean }) {
       className="relative flex min-h-[100vh] items-center overflow-hidden pt-20"
       data-screen-label="01 Hero"
     >
-      {/* background layers */}
+      {/* background layers — theme-aware via CSS custom properties */}
       <div className="pointer-events-none absolute inset-0 z-0">
-        <div
-          className="hero-grid absolute inset-0 opacity-0"
-          style={{
-            animation:
-              "fadeUp 1s var(--ease-out-expo) 100ms forwards",
-            transform: "translateY(0)",
-            // override fadeUp's translate, we only want opacity
-            // (kept minimal — keyframes target opacity+transform; reset transform here)
-          }}
-        />
+        <div className="hero-grid absolute inset-0" />
         <div
           className="hero-glow absolute"
           style={{

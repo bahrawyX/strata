@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { authClient } from "@/lib/auth-client";
 
 export function Topbar({
@@ -27,11 +28,12 @@ export function Topbar({
       <Link href="/connections" className="inline-flex">
         <Logo />
       </Link>
-      <div className="ml-auto flex items-center gap-3">
+      <div className="ml-auto flex items-center gap-2">
         <div className="hidden sm:flex flex-col items-end leading-tight">
           <span className="text-sm text-foreground">{userName}</span>
           <span className="text-xs text-muted-foreground">{userEmail}</span>
         </div>
+        <ThemeToggle />
         <Button
           variant="ghost"
           size="icon-sm"

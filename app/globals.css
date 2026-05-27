@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* Color tokens (shadcn primitives map onto the design's layered palette) */
+  /* shadcn primitives */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -42,22 +42,99 @@
   --color-accent-muted: var(--accent-muted);
   --color-accent-glow: var(--accent-glow);
 
-  /* Fonts */
   --font-sans: var(--font-sans, system-ui, sans-serif);
   --font-display: var(--font-display, Georgia, serif);
   --font-mono: var(--font-mono, ui-monospace, monospace);
   --font-heading: var(--font-display);
 
-  /* Radius scale (matches design) */
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
 }
 
-:root,
+/* ────────────────────────────────────────────────────────────────────────
+   LIGHT THEME (default — no class on <html>)
+   ──────────────────────────────────────────────────────────────────────── */
+:root {
+  --bg-base: #fbfbfd;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f4f4f8;
+  --bg-overlay: #eaeaf2;
+
+  --border-subtle: #e7e7ee;
+  --border-default: #d7d7e0;
+  --border-strong: #b4b4c0;
+
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-muted: rgba(99, 102, 241, 0.1);
+  --accent-glow: rgba(99, 102, 241, 0.2);
+
+  --text-primary: #0b0b14;
+  --text-secondary: #475569;
+  --text-muted: #8a92a3;
+  --text-disabled: #c5cad4;
+
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
+
+  /* shadcn primitive mappings */
+  --background: var(--bg-base);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-surface);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--accent);
+  --primary-foreground: #ffffff;
+  --secondary: var(--bg-elevated);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-elevated);
+  --muted-foreground: var(--text-secondary);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--danger);
+  --border: var(--border-subtle);
+  --input: var(--border-subtle);
+  --ring: var(--accent);
+  --radius: 8px;
+  --sidebar: var(--bg-surface);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--bg-elevated);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--border-subtle);
+  --sidebar-ring: var(--accent);
+
+  /* Theme-specific layer tunables */
+  --hero-grid-stroke: rgba(15, 23, 42, 0.06);
+  --hero-grid-accent: rgba(99, 102, 241, 0.08);
+  --hero-glow-color: rgba(99, 102, 241, 0.12);
+  --hero-noise-opacity: 0.18;
+  --hero-noise-blend: multiply;
+  --cta-banner-bg-from: #f4f4f9;
+  --cta-banner-bg-to: #ebebf3;
+  --pill-bg: rgba(255, 255, 255, 0.72);
+  --pill-border: rgba(15, 23, 42, 0.08);
+  --pill-shadow:
+    0 8px 28px rgba(15, 23, 42, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.8) inset;
+
+  /* Easing */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --duration-fast: 120ms;
+  --duration-base: 220ms;
+  --duration-slow: 400ms;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   DARK THEME (applied when <html class="dark">)
+   ──────────────────────────────────────────────────────────────────────── */
 .dark {
-  /* —— Strata design system tokens (verbatim from the handoff) ———————— */
   --bg-base: #080810;
   --bg-surface: #0f0f1a;
   --bg-elevated: #161625;
@@ -81,7 +158,6 @@
   --warning: #f59e0b;
   --danger: #ef4444;
 
-  /* —— shadcn primitive mappings ————————————————————————————————— */
   --background: var(--bg-base);
   --foreground: var(--text-primary);
   --card: var(--bg-surface);
@@ -99,7 +175,6 @@
   --border: var(--border-subtle);
   --input: var(--border-subtle);
   --ring: var(--accent);
-  --radius: 8px;
   --sidebar: var(--bg-surface);
   --sidebar-foreground: var(--text-primary);
   --sidebar-primary: var(--accent);
@@ -109,24 +184,39 @@
   --sidebar-border: var(--border-subtle);
   --sidebar-ring: var(--accent);
 
-  /* —— Stronger easing curves —————————————————————————————————— */
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
-  --duration-fast: 120ms;
-  --duration-base: 220ms;
-  --duration-slow: 400ms;
+  --hero-grid-stroke: rgba(148, 163, 184, 0.06);
+  --hero-grid-accent: rgba(99, 102, 241, 0.06);
+  --hero-glow-color: rgba(99, 102, 241, 0.1);
+  --hero-noise-opacity: 0.35;
+  --hero-noise-blend: overlay;
+  --cta-banner-bg-from: #0f0f1a;
+  --cta-banner-bg-to: #0d0d1f;
+  --pill-bg: rgba(8, 8, 16, 0.6);
+  --pill-border: rgba(255, 255, 255, 0.08);
+  --pill-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.05) inset;
 }
 
+/* ────────────────────────────────────────────────────────────────────────
+   Base styles
+   ──────────────────────────────────────────────────────────────────────── */
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* Smooth theme transitions on color properties only — fast enough not to
+       feel laggy, slow enough to look intentional. */
   }
   html {
-    color-scheme: dark;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    scroll-behavior: smooth;
+    /* No native smooth-scroll — Lenis handles it. */
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  html:not(.dark) {
+    color-scheme: light;
   }
   body {
     background: var(--bg-base);
@@ -134,6 +224,8 @@
     font-family: var(--font-sans);
     font-size: 16px;
     line-height: 1.55;
+    transition: background-color 250ms var(--ease-out-expo),
+      color 250ms var(--ease-out-expo);
   }
   ::selection {
     background: var(--accent-muted);
@@ -203,14 +295,14 @@
     color: var(--accent);
   }
 
-  /* Hero background layers — verbatim from the design */
+  /* Hero background layers — theme-aware */
   .hero-grid {
     background-image:
       linear-gradient(
         to bottom,
         transparent 0%,
         transparent 49.6%,
-        rgba(99, 102, 241, 0.06) 50%,
+        var(--hero-grid-accent) 50%,
         transparent 50.4%,
         transparent 100%
       ),
@@ -218,8 +310,8 @@
         0deg,
         transparent 0,
         transparent 47px,
-        rgba(148, 163, 184, 0.06) 47px,
-        rgba(148, 163, 184, 0.06) 48px
+        var(--hero-grid-stroke) 47px,
+        var(--hero-grid-stroke) 48px
       );
     mask-image: radial-gradient(
       ellipse 70% 60% at 50% 50%,
@@ -231,30 +323,48 @@
       #000 0%,
       transparent 80%
     );
-    opacity: 0.5;
+    opacity: 0.7;
   }
   .hero-glow {
     background: radial-gradient(
       circle,
-      rgba(99, 102, 241, 0.1) 0%,
+      var(--hero-glow-color) 0%,
       transparent 60%
     );
     filter: blur(40px);
   }
   .hero-noise {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-    opacity: 0.35;
-    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    opacity: var(--hero-noise-opacity);
+    mix-blend-mode: var(--hero-noise-blend);
   }
   .cta-glow {
     background: radial-gradient(
       ellipse,
-      rgba(99, 102, 241, 0.12) 0%,
+      rgba(99, 102, 241, 0.18) 0%,
       transparent 70%
     );
     filter: blur(40px);
   }
-  /* Mockup CRT-like scanlines */
+  .cta-bg {
+    background: linear-gradient(
+      135deg,
+      var(--cta-banner-bg-from) 0%,
+      var(--cta-banner-bg-to) 100%
+    );
+  }
+
+  /* Floating pill navbar surface */
+  .pill-surface {
+    background: var(--pill-bg);
+    border: 1px solid var(--pill-border);
+    box-shadow: var(--pill-shadow);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+  }
+
+  /* Mockup scanlines (mockup is always-dark — looks like a screenshot of the
+     real product running in dark mode regardless of page theme) */
   .mockup-scanlines {
     background: repeating-linear-gradient(
       0deg,
@@ -265,7 +375,7 @@
     );
   }
 
-  /* Page-in fade for the whole document */
+  /* Page-in fade */
   @keyframes pageIn {
     from {
       opacity: 0;
@@ -280,7 +390,6 @@
     animation: pageIn 0.5s var(--ease-out-expo) both;
   }
 
-  /* Hero per-line stagger */
   @keyframes lineIn {
     to {
       opacity: 1;

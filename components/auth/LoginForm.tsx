@@ -1,24 +1,25 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authClient } from "@/lib/auth-client";
 import { loginSchema } from "@/lib/validations";
 
-export function LoginForm({ redirectTo }: { redirectTo: string }) {
-  const router = useRouter();
+/**
+ * Static login form — the visual experience is complete, but the submit
+ * handler doesn't call any auth backend yet. Real authentication will be
+ * wired in a future change.
+ */
+export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
     {}
   );
-  const [formError, setFormError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   function validateField(field: "email" | "password") {
     const result = loginSchema.safeParse({ email, password });
@@ -30,9 +31,9 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
     }
   }
 
-  async function onSubmit(e: FormEvent) {
+  function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setFormError(null);
+    setNotice(null);
     const result = loginSchema.safeParse({ email, password });
     if (!result.success) {
       const next: typeof errors = {};
@@ -43,23 +44,9 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
       setErrors(next);
       return;
     }
-    setSubmitting(true);
-    try {
-      const { error } = await authClient.signIn.email({
-        email: result.data.email,
-        password: result.data.password,
-      });
-      if (error) {
-        setFormError("Invalid email or password.");
-        setSubmitting(false);
-        return;
-      }
-      router.push(redirectTo);
-      router.refresh();
-    } catch {
-      setFormError("Could not sign in. Please try again.");
-      setSubmitting(false);
-    }
+    setNotice(
+      "Sign-in is in development. Accounts can't be created yet — check back soon."
+    );
   }
 
   return (
@@ -74,7 +61,6 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
           onChange={(e) => setEmail(e.target.value)}
           onBlur={() => validateField("email")}
           aria-invalid={Boolean(errors.email)}
-          disabled={submitting}
         />
         {errors.email && (
           <p className="text-xs text-destructive">{errors.email}</p>
@@ -92,13 +78,12 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
             onChange={(e) => setPassword(e.target.value)}
             onBlur={() => validateField("password")}
             aria-invalid={Boolean(errors.password)}
-            disabled={submitting}
             className="pr-10"
           />
           <button
             type="button"
             onClick={() => setShowPassword((s) => !s)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={showPassword ? "Hide password" : "Show password"}
             tabIndex={-1}
           >
@@ -114,26 +99,15 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
         )}
       </div>
 
-      {formError && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {formError}
+      {notice && (
+        <div className="flex items-start gap-2 rounded-md border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-2.5 text-sm text-[var(--text-secondary)]">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
+          <span>{notice}</span>
         </div>
       )}
 
-      <Button
-        type="submit"
-        size="lg"
-        className="w-full"
-        disabled={submitting}
-      >
-        {submitting ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Signing in…
-          </>
-        ) : (
-          "Sign in"
-        )}
+      <Button type="submit" size="lg" className="w-full">
+        Sign in
       </Button>
     </form>
   );

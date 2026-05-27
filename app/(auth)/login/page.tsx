@@ -5,14 +5,7 @@ export const metadata = {
   title: "Sign in — Strata",
 };
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ redirect?: string }>;
-}) {
-  const params = await searchParams;
-  const redirectTo = typeof params.redirect === "string" ? params.redirect : "/connections";
-
+export default function LoginPage() {
   return (
     <div>
       <div className="mb-8 space-y-1.5">
@@ -21,12 +14,12 @@ export default async function LoginPage({
           Sign in to continue to your databases.
         </p>
       </div>
-      <LoginForm redirectTo={redirectTo} />
+      <LoginForm />
       <p className="mt-6 text-sm text-muted-foreground">
         New to Strata?{" "}
         <Link
           href="/signup"
-          className="font-medium text-foreground hover:text-primary transition-colors"
+          className="font-medium text-foreground transition-colors hover:text-primary"
         >
           Create an account
         </Link>

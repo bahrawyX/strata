@@ -78,7 +78,9 @@ export function ProductPreview() {
           </h2>
         </motion.div>
 
-        {/* mockup */}
+        {/* Mockup — always rendered in dark mode regardless of page theme;
+            it represents a screenshot of the actual product running in dark
+            UI, the way Stripe and Linear do on their marketing pages. */}
         <motion.div
           ref={wrapRef}
           initial={reduce ? { opacity: 0 } : { opacity: 0, y: 60, scale: 0.96 }}
@@ -87,7 +89,7 @@ export function ProductPreview() {
           }
           viewport={{ once: true, margin: "-10% 0px" }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="relative mx-auto max-w-[1100px] overflow-hidden rounded-[var(--radius-lg)] bg-[var(--bg-surface)] shadow-[0_40px_120px_rgba(0,0,0,0.6),0_0_0_1px_var(--border-subtle)]"
+          className="dark relative mx-auto max-w-[1100px] overflow-hidden rounded-[var(--radius-lg)] bg-[var(--bg-surface)] shadow-[0_40px_120px_rgba(0,0,0,0.45),0_0_0_1px_var(--border-subtle)]"
           role="img"
           aria-label="Strata application screenshot"
           style={{ transformOrigin: "50% 0%" }}
