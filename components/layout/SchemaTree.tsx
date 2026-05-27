@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, Table2, Terminal, LayoutDashboard } from "lucide-react";
+import {
+  ArrowLeft,
+  GitBranch,
+  LayoutDashboard,
+  Table2,
+  Terminal,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TableInfo } from "@/server/actions/schema";
 
@@ -49,6 +55,13 @@ export function SchemaTree({
           active={pathname === `/db/${connectionId}/query`}
         >
           SQL editor
+        </NavItem>
+        <NavItem
+          href={`/db/${connectionId}/schema`}
+          icon={<GitBranch className="h-3.5 w-3.5" />}
+          active={pathname === `/db/${connectionId}/schema`}
+        >
+          Schema
         </NavItem>
       </nav>
 
@@ -107,10 +120,10 @@ function NavItem({
     <Link
       href={href}
       className={cn(
-        "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+        "flex items-center gap-2 rounded-md border-l-2 px-2 py-1.5 text-sm transition-colors",
         active
-          ? "bg-accent text-foreground"
-          : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+          ? "border-[var(--accent)] bg-[var(--accent-muted)] text-foreground"
+          : "border-transparent text-muted-foreground hover:bg-[var(--bg-elevated)] hover:text-foreground"
       )}
     >
       {icon}

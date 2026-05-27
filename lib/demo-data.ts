@@ -8,7 +8,12 @@
  */
 
 import type { ConnectionSummary } from "@/server/actions/connections";
-import type { ColumnInfo, TableInfo, DbStats } from "@/server/actions/schema";
+import type {
+  ColumnInfo,
+  TableInfo,
+  DbStats,
+  SchemaTableDiagram,
+} from "@/server/actions/schema";
 import type {
   TableDataResult,
   TableRow,
@@ -136,6 +141,42 @@ export const DEMO_ROWS: RowsByTable = {
 export function isDemoConnectionId(id: string): boolean {
   return id === DEMO_CONNECTION_ID;
 }
+
+/**
+ * Demo schema diagram — auto-laid-out grid (4 columns × N rows) with
+ * realistic foreign-key relationships connecting orders/sessions/invoices/
+ * api_keys back to users. Used by the Schema page when a real DB isn't
+ * connected.
+ */
+const DEMO_FK_REFS: Record<
+  string,
+  Record<string, { table: string; column: string }>
+> = {
+  orders: { user_id: { table: "users", column: "id" } },
+  sessions: { user_id: { table: "users", column: "id" } },
+  invoices: { order_id: { table: "orders", column: "id" } },
+  api_keys: { user_id: { table: "users", column: "id" } },
+};
+
+export const DEMO_SCHEMA_DIAGRAM: SchemaTableDiagram[] = (() => {
+  const sorted = [...DEMO_TABLES].sort((a, b) => a.name.localeCompare(b.name));
+  return sorted.map((t, i) => {
+    const refs = DEMO_FK_REFS[t.name] ?? {};
+    const columns = (DEMO_COLUMNS[t.name] ?? []).map((c) => ({
+      name: c.name,
+      type: c.dataType,
+      primary: c.isPrimaryKey,
+      nullable: c.isNullable,
+      references: refs[c.name],
+    }));
+    return {
+      name: t.name,
+      x: (i % 4) * 300 + 24,
+      y: Math.floor(i / 4) * 260 + 28,
+      columns,
+    };
+  });
+})();
 
 export function getDemoTableData(
   tableName: string,

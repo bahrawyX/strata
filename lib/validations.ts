@@ -25,6 +25,13 @@ export const connectionStringSchema = z
   .string()
   .min(1, "Connection string is required.")
   .refine(
+    // URL parsing trims leading whitespace silently, which would let
+    // " postgresql://..." pass. Reject any leading/trailing whitespace
+    // before we even try to parse.
+    (val) => val === val.trim(),
+    "Must be a valid PostgreSQL connection string (postgresql://...)"
+  )
+  .refine(
     (val) => {
       try {
         const url = new URL(val);

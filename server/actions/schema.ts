@@ -3,6 +3,7 @@
 import { getClient } from "@/lib/user-db";
 import {
   DEMO_COLUMNS,
+  DEMO_SCHEMA_DIAGRAM,
   DEMO_STATS,
   DEMO_TABLES,
   isDemoConnectionId,
@@ -30,6 +31,21 @@ export type DbStats = {
   postgresVersion: string;
   sizeBytes: number;
   tableCount: number;
+};
+
+export type SchemaDiagramColumn = {
+  name: string;
+  type: string;
+  primary: boolean;
+  nullable: boolean;
+  references?: { table: string; column: string };
+};
+
+export type SchemaTableDiagram = {
+  name: string;
+  x: number;
+  y: number;
+  columns: SchemaDiagramColumn[];
 };
 
 export async function getTables(
@@ -214,6 +230,133 @@ export async function getDbStats(
   } catch (err) {
     console.error("getDbStats failed", err);
     return { error: "Could not load database stats." };
+  } finally {
+    if (client) {
+      try {
+        await client.end();
+      } catch {
+        // ignore
+      }
+    }
+  }
+}
+
+/**
+ * Assemble the full schema (tables, columns, primary keys, foreign keys) into
+ * the shape the bahrawy `<Schema />` component expects, with an auto-layout
+ * that drops tables into a 4-column grid.
+ */
+export async function getSchemaForDiagram(
+  connectionId: string
+): Promise<ActionResult<SchemaTableDiagram[]>> {
+  if (isDemoConnectionId(connectionId)) {
+    return { data: DEMO_SCHEMA_DIAGRAM };
+  }
+  const session = await getOptionalSession().catch(() => null);
+  if (!session) {
+    return { error: "Sign in to inspect real schemas." };
+  }
+  const record = await getConnectionRecordForUser(
+    connectionId,
+    session.user.id
+  );
+  if (!record) return { error: "Connection not found." };
+
+  let client;
+  try {
+    client = await getClient(record.encryptedConnectionString);
+
+    // Step 1 — tables in public schema
+    const tablesQ = await client.query<{ table_name: string }>(
+      `SELECT table_name
+       FROM information_schema.tables
+       WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+       ORDER BY table_name`
+    );
+    const tableNames = tablesQ.rows.map((r) => r.table_name);
+
+    // Step 2 — columns with types
+    const columnsQ = await client.query<{
+      table_name: string;
+      column_name: string;
+      data_type: string;
+      is_nullable: "YES" | "NO";
+    }>(
+      `SELECT table_name, column_name, data_type, is_nullable
+       FROM information_schema.columns
+       WHERE table_schema = 'public'
+       ORDER BY table_name, ordinal_position`
+    );
+
+    // Step 3 — primary keys
+    const pkQ = await client.query<{
+      table_name: string;
+      column_name: string;
+    }>(
+      `SELECT tc.table_name, kcu.column_name
+       FROM information_schema.table_constraints tc
+       JOIN information_schema.key_column_usage kcu
+         ON tc.constraint_name = kcu.constraint_name
+         AND tc.table_schema = kcu.table_schema
+       WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = 'public'`
+    );
+    const pkSet = new Set(
+      pkQ.rows.map((r) => `${r.table_name}.${r.column_name}`)
+    );
+
+    // Step 4 — foreign keys
+    const fkQ = await client.query<{
+      table_name: string;
+      column_name: string;
+      foreign_table_name: string;
+      foreign_column_name: string;
+    }>(
+      `SELECT
+         kcu.table_name,
+         kcu.column_name,
+         ccu.table_name AS foreign_table_name,
+         ccu.column_name AS foreign_column_name
+       FROM information_schema.table_constraints tc
+       JOIN information_schema.key_column_usage kcu
+         ON tc.constraint_name = kcu.constraint_name
+         AND tc.table_schema = kcu.table_schema
+       JOIN information_schema.constraint_column_usage ccu
+         ON ccu.constraint_name = tc.constraint_name
+         AND ccu.table_schema = tc.table_schema
+       WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'public'`
+    );
+    const fkMap = new Map<string, { table: string; column: string }>();
+    for (const r of fkQ.rows) {
+      fkMap.set(`${r.table_name}.${r.column_name}`, {
+        table: r.foreign_table_name,
+        column: r.foreign_column_name,
+      });
+    }
+
+    // Step 5 — assemble with auto-layout (alphabetical, 4-col grid)
+    const sortedNames = [...tableNames].sort((a, b) => a.localeCompare(b));
+    const tables: SchemaTableDiagram[] = sortedNames.map((name, i) => {
+      const cols = columnsQ.rows
+        .filter((c) => c.table_name === name)
+        .map((c) => ({
+          name: c.column_name,
+          type: c.data_type,
+          primary: pkSet.has(`${name}.${c.column_name}`),
+          nullable: c.is_nullable === "YES",
+          references: fkMap.get(`${name}.${c.column_name}`),
+        }));
+      return {
+        name,
+        x: (i % 4) * 300 + 24,
+        y: Math.floor(i / 4) * 260 + 28,
+        columns: cols,
+      };
+    });
+
+    return { data: tables };
+  } catch (err) {
+    console.error("getSchemaForDiagram failed", err);
+    return { error: "Could not read the schema diagram." };
   } finally {
     if (client) {
       try {

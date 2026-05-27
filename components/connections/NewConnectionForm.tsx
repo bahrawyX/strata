@@ -9,7 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { newConnectionSchema } from "@/lib/validations";
-import { createConnection } from "@/server/actions/connections";
+import {
+  createConnection,
+  type ActionResult,
+  type ConnectionSummary,
+} from "@/server/actions/connections";
 
 type DbType = "neon" | "supabase" | "postgres";
 
@@ -19,7 +23,28 @@ const DB_TYPES: { value: DbType; label: string }[] = [
   { value: "postgres", label: "PostgreSQL" },
 ];
 
-export function NewConnectionForm() {
+type NewConnectionInput = {
+  name: string;
+  connectionString: string;
+  dbType: DbType;
+};
+
+export type NewConnectionFormProps = {
+  /**
+   * Override the submission handler. Defaults to the `createConnection`
+   * server action. Tests inject a mock to verify the form's loading and
+   * error states without touching the real backend.
+   */
+  onSubmit?: (
+    input: NewConnectionInput
+  ) => Promise<ActionResult<ConnectionSummary>>;
+};
+
+// Default export kept for ergonomic test imports
+// (`import NewConnectionForm from '@/components/connections/NewConnectionForm'`).
+export default function NewConnectionForm({
+  onSubmit: onSubmitProp,
+}: NewConnectionFormProps = {}) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [connectionString, setConnectionString] = useState("");
@@ -63,7 +88,8 @@ export function NewConnectionForm() {
     setFormError(null);
     if (!validate()) return;
     startTransition(async () => {
-      const result = await createConnection({
+      const submit = onSubmitProp ?? createConnection;
+      const result = await submit({
         name,
         connectionString,
         dbType,
@@ -194,3 +220,6 @@ export function NewConnectionForm() {
     </form>
   );
 }
+
+// Named re-export so existing imports keep working alongside the new default.
+export { NewConnectionForm };
