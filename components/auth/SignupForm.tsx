@@ -1,18 +1,20 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { Eye, EyeOff, Info } from "lucide-react";
+import { useState, useTransition, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signupSchema } from "@/lib/validations";
+import { signUpDemo } from "@/server/actions/demo-auth";
 
 /**
- * Static signup form — visually complete but the submit handler doesn't
- * persist anything yet. Real account creation will be wired in a future
- * change.
+ * Demo signup form. Validation gates the submit; on success the demo session
+ * cookie is set and we route to /connections. No real account is persisted.
  */
 export function SignupForm() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,7 +24,8 @@ export function SignupForm() {
     email?: string;
     password?: string;
   }>({});
-  const [notice, setNotice] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, startTransition] = useTransition();
 
   function validateField(field: "name" | "email" | "password") {
     const result = signupSchema.safeParse({ name, email, password });
@@ -36,7 +39,7 @@ export function SignupForm() {
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setNotice(null);
+    setFormError(null);
     const result = signupSchema.safeParse({ name, email, password });
     if (!result.success) {
       const next: typeof errors = {};
@@ -47,9 +50,19 @@ export function SignupForm() {
       setErrors(next);
       return;
     }
-    setNotice(
-      "Sign-up is in development. Accounts can't be created yet — check back soon."
-    );
+    startTransition(async () => {
+      const res = await signUpDemo({
+        name: result.data.name,
+        email: result.data.email,
+        password: result.data.password,
+      });
+      if (!res.ok) {
+        setFormError(res.error);
+        return;
+      }
+      router.push("/connections");
+      router.refresh();
+    });
   }
 
   return (
@@ -64,6 +77,7 @@ export function SignupForm() {
           onChange={(e) => setName(e.target.value)}
           onBlur={() => validateField("name")}
           aria-invalid={Boolean(errors.name)}
+          disabled={submitting}
         />
         {errors.name && (
           <p className="text-xs text-destructive">{errors.name}</p>
@@ -80,6 +94,7 @@ export function SignupForm() {
           onChange={(e) => setEmail(e.target.value)}
           onBlur={() => validateField("email")}
           aria-invalid={Boolean(errors.email)}
+          disabled={submitting}
         />
         {errors.email && (
           <p className="text-xs text-destructive">{errors.email}</p>
@@ -97,6 +112,7 @@ export function SignupForm() {
             onChange={(e) => setPassword(e.target.value)}
             onBlur={() => validateField("password")}
             aria-invalid={Boolean(errors.password)}
+            disabled={submitting}
             className="pr-10"
           />
           <button
@@ -122,15 +138,29 @@ export function SignupForm() {
         )}
       </div>
 
-      {notice && (
-        <div className="flex items-start gap-2 rounded-md border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-2.5 text-sm text-[var(--text-secondary)]">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
-          <span>{notice}</span>
+      <div className="flex items-start gap-2 rounded-md border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-2.5 text-xs text-[var(--text-secondary)]">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+        <span>
+          Demo mode — your account isn&apos;t saved yet. You&apos;ll land on
+          the dashboard with canned data.
+        </span>
+      </div>
+
+      {formError && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {formError}
         </div>
       )}
 
-      <Button type="submit" size="lg" className="w-full">
-        Create account
+      <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+        {submitting ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Creating account…
+          </>
+        ) : (
+          "Create account"
+        )}
       </Button>
     </form>
   );

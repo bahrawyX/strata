@@ -7,23 +7,27 @@ import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { authClient } from "@/lib/auth-client";
+import { signOutDemo } from "@/server/actions/demo-auth";
 
-export function Topbar({
-  userEmail,
-  userName,
-}: {
-  userEmail: string | null;
-  userName: string | null;
-}) {
+export type ViewerProp =
+  | { source: "real"; name: string; email: string }
+  | { source: "demo"; name: string; email: string }
+  | null;
+
+export function Topbar({ viewer }: { viewer: ViewerProp }) {
   const router = useRouter();
-  const isAuthed = Boolean(userEmail);
+  const isAuthed = Boolean(viewer);
+  const isDemo = viewer?.source === "demo";
 
   async function handleSignOut() {
-    try {
-      await authClient.signOut();
-    } catch {
-      // ignore — even if the API call fails (no session, etc.) we still want
-      // to bounce the user back to /login.
+    if (isDemo) {
+      await signOutDemo();
+    } else {
+      try {
+        await authClient.signOut();
+      } catch {
+        // ignore — still bounce the user back to /login
+      }
     }
     router.push("/login");
     router.refresh();
@@ -35,10 +39,19 @@ export function Topbar({
         <Logo />
       </Link>
 
+      {isDemo && (
+        <span
+          className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--accent-muted)] px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--accent)] sm:inline-flex"
+          title="You're signed in as a demo user — connect a real Postgres for live data."
+        >
+          <span className="size-1.5 rounded-full bg-[var(--accent)]" />
+          Demo session
+        </span>
+      )}
       {!isAuthed && (
         <span
           className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--accent-muted)] px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--accent)] sm:inline-flex"
-          title="You're browsing canned demo data — connect a real Postgres for live data."
+          title="You're browsing canned demo data — sign in to see the connected experience."
         >
           <span className="size-1.5 rounded-full bg-[var(--accent)]" />
           Demo mode
@@ -46,10 +59,14 @@ export function Topbar({
       )}
 
       <div className="ml-auto flex items-center gap-2">
-        {isAuthed ? (
+        {isAuthed && viewer ? (
           <div className="hidden sm:flex flex-col items-end leading-tight">
-            <span className="text-sm text-foreground">{userName}</span>
-            <span className="text-xs text-muted-foreground">{userEmail}</span>
+            <span className="text-sm capitalize text-foreground">
+              {viewer.name}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {viewer.email}
+            </span>
           </div>
         ) : (
           <Link
