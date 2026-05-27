@@ -1,118 +1,81 @@
-"use client";
-
 import Link from "next/link";
-import { motion, useReducedMotion } from "motion/react";
 import { Logo } from "@/components/brand/Logo";
 
-function GithubMark({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-      className={className}
-    >
-      <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.34-1.27-1.7-1.27-1.7-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.68 1.25 3.34.95.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.94 10.94 0 0 1 5.74 0c2.18-1.49 3.14-1.18 3.14-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.67.79.56C20.21 21.38 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z" />
-    </svg>
-  );
-}
-
-const COLUMNS = [
+const COLS: { title: string; links: { label: string; href: string }[] }[] = [
   {
-    label: "Product",
+    title: "Product",
     links: [
-      { label: "Features", href: "#features" },
-      { label: "How it works", href: "#workflow" },
-      { label: "Security", href: "#security" },
+      { label: "Features", href: "/#features" },
+      { label: "Pricing", href: "/pricing" },
+      { label: "Changelog", href: "/#changelog" },
+      { label: "Roadmap", href: "/#roadmap" },
     ],
   },
   {
-    label: "Account",
+    title: "Developers",
     links: [
-      { label: "Sign in", href: "/login" },
-      { label: "Create account", href: "/signup" },
+      { label: "Docs", href: "/docs" },
+      { label: "API reference", href: "/docs#api" },
+      { label: "Status", href: "/#status" },
     ],
   },
   {
-    label: "More",
+    title: "Company",
     links: [
-      {
-        label: "Source on GitHub",
-        href: "https://github.com/bahrawyX/strata",
-        external: true,
-      },
+      { label: "About", href: "/#about" },
+      { label: "Blog", href: "/#blog" },
+      { label: "Contact", href: "/#contact" },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { label: "Privacy", href: "/#privacy" },
+      { label: "Terms", href: "/#terms" },
+      { label: "Security", href: "/#security" },
     ],
   },
 ];
 
 export function MarketingFooter() {
-  const reduce = useReducedMotion();
-
   return (
-    <footer className="relative mt-12 border-t border-border bg-card/40">
-      <div className="mx-auto max-w-6xl px-6 pt-14 pb-10">
-        <div className="grid gap-10 lg:grid-cols-[1.4fr_2fr]">
-          <div>
+    <footer className="mt-20 border-t border-[var(--border-subtle)] px-0 pb-12 pt-16">
+      <div className="mx-auto max-w-[1200px] px-8">
+        <div className="grid grid-cols-2 items-start gap-12 md:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
+          <div className="col-span-2 md:col-span-1">
             <Logo />
-            <p className="mt-3 max-w-xs text-sm text-muted-foreground leading-relaxed">
-              The Postgres workspace for people who ship.
+            <p className="mt-4 max-w-[220px] text-[14px] leading-[1.55] text-[var(--text-muted)]">
+              The layer between you and your data.
             </p>
           </div>
-
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
-            {COLUMNS.map((col) => (
-              <div key={col.label}>
-                <h4 className="text-xs uppercase tracking-wider text-muted-foreground">
-                  {col.label}
-                </h4>
-                <ul className="mt-3 space-y-2">
-                  {col.links.map((link) => (
-                    <li key={link.href}>
-                      {"external" in link && link.external ? (
-                        <a
-                          href={link.href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-sm text-foreground/85 hover:text-foreground transition-colors duration-150"
-                        >
-                          {link.label}
-                          {link.label.toLowerCase().includes("github") && (
-                            <GithubMark className="h-3 w-3" />
-                          )}
-                        </a>
-                      ) : (
-                        <Link
-                          href={link.href}
-                          className="text-sm text-foreground/85 hover:text-foreground transition-colors duration-150"
-                        >
-                          {link.label}
-                        </Link>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+          {COLS.map((col) => (
+            <div key={col.title}>
+              <h4 className="mb-4 font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-[var(--text-muted)]">
+                {col.title}
+              </h4>
+              <ul className="flex list-none flex-col gap-2.5">
+                {col.links.map((l) => (
+                  <li key={l.href}>
+                    <Link
+                      href={l.href}
+                      className="text-[14px] text-[var(--text-secondary)] transition-colors duration-[120ms] hover:text-[var(--text-primary)]"
+                    >
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        {/* Big wordmark that softly reveals on scroll. */}
-        <motion.div
-          initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24 }}
-          whileInView={reduce ? { opacity: 0.65 } : { opacity: 0.65, y: 0 }}
-          viewport={{ once: true, margin: "-5% 0px" }}
-          transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
-          className="mt-14 select-none overflow-hidden"
-          aria-hidden
-        >
-          <p className="-mb-3 text-[clamp(3rem,17vw,12rem)] font-semibold leading-[0.85] tracking-tighter text-foreground/10">
-            strata
-          </p>
-        </motion.div>
-
-        <div className="mt-8 flex flex-col items-start justify-between gap-3 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center">
-          <span>© {new Date().getFullYear()} Strata. All rights reserved.</span>
-          <span>Built for developers.</span>
+        <div className="mt-14 flex flex-col items-start justify-between gap-3 border-t border-[var(--border-subtle)] pt-6 text-[13px] text-[var(--text-muted)] sm:flex-row sm:items-center">
+          <div className="font-mono text-[12px]">
+            © {new Date().getFullYear()} Strata Systems, Inc.
+          </div>
+          <div className="font-mono text-[12px]">
+            Built with Neon + Next.js
+          </div>
         </div>
       </div>
     </footer>

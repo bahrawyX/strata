@@ -1,21 +1,31 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { DM_Sans, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const dmSans = DM_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["400"],
+  style: ["normal", "italic"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
-  title: "Strata — Postgres, beautifully managed",
+  title: "Strata — The layer between you and your data",
   description:
-    "Connect Neon, Supabase, or any PostgreSQL database and browse, query, and manipulate your data in one elegant workspace.",
+    "Connect any PostgreSQL database in seconds. Browse tables, run queries, and edit data — without ever leaving your workflow.",
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({
@@ -26,7 +36,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} dark h-full`}
+      className={`${dmSans.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} dark h-full`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}

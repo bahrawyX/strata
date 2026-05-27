@@ -1,302 +1,238 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import {
-  Database,
-  KeyRound,
-  Network,
-  Terminal,
-  Zap,
-} from "lucide-react";
-import { Reveal } from "@/components/motion/Reveal";
+import { Eyebrow } from "./primitives";
+
+function NeonBadge() {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-base)] px-3 py-2 font-mono text-[12px] tracking-[0.04em] text-[var(--text-secondary)]">
+      <svg viewBox="0 0 14 14" fill="currentColor" className="h-3.5 w-3.5" aria-hidden>
+        <circle cx="7" cy="7" r="3" />
+        <path
+          d="M1 7h3M10 7h3M7 1v3M7 10v3"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          fill="none"
+        />
+      </svg>
+      Neon
+    </span>
+  );
+}
+function SupabaseBadge() {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-base)] px-3 py-2 font-mono text-[12px] tracking-[0.04em] text-[var(--text-secondary)]">
+      <svg
+        viewBox="0 0 14 14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        className="h-3.5 w-3.5"
+        aria-hidden
+      >
+        <path d="M7 1L12 7l-5 6L2 7z" />
+      </svg>
+      Supabase
+    </span>
+  );
+}
+function PostgresBadge() {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-base)] px-3 py-2 font-mono text-[12px] tracking-[0.04em] text-[var(--text-secondary)]">
+      <svg
+        viewBox="0 0 14 14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        className="h-3.5 w-3.5"
+        aria-hidden
+      >
+        <ellipse cx="7" cy="3.5" rx="5" ry="2" />
+        <path d="M2 3.5v7c0 1.1 2.24 2 5 2s5-.9 5-2v-7" />
+      </svg>
+      Postgres
+    </span>
+  );
+}
 
 export function FeatureBento() {
+  const reduce = useReducedMotion();
+
   return (
-    <section id="features" className="relative">
-      <div className="mx-auto max-w-6xl px-6 py-24">
-        <Reveal>
-          <h2 className="max-w-2xl text-3xl md:text-4xl font-semibold tracking-tighter leading-tight">
-            Built for the day-to-day of working in a database.
+    <section id="features" className="py-[120px]" data-screen-label="04 Features">
+      <div className="mx-auto max-w-[1200px] px-8">
+        <motion.div
+          initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24 }}
+          whileInView={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-10% 0px" }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="mb-16 flex flex-col gap-4"
+        >
+          <Eyebrow>Built for engineers</Eyebrow>
+          <h2 className="font-display text-[clamp(36px,4.5vw,56px)] text-left">
+            Tools that respect
+            <br />
+            <em>how you actually work.</em>
           </h2>
-        </Reveal>
-        <Reveal delay={0.08}>
-          <p className="mt-4 max-w-[58ch] text-base text-muted-foreground leading-relaxed">
-            Strata stays out of the way until you need it. Then it&apos;s right
-            there — keyboard-fast, type-aware, and honest about what&apos;s
-            happening on the wire.
-          </p>
-        </Reveal>
+        </motion.div>
 
-        {/* 5-cell bento — varied sizes, varied visuals. Avoids the
-            "6 white cards in a row" anti-pattern. */}
-        <div className="mt-12 grid gap-3 sm:grid-cols-6 sm:grid-rows-[260px_260px]">
-          <BentoCell className="sm:col-span-3 sm:row-span-2 overflow-hidden">
-            <CellHeader
-              icon={<Database className="h-4 w-4" />}
-              eyebrow="Connect"
-              title="Any Postgres, in seconds."
-              body="Paste a connection string. We test it before saving and encrypt it with AES-256-GCM before it ever hits disk."
-            />
-            <EncryptVisual />
-          </BentoCell>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {/* Wide — works with any Postgres */}
+          <BentoCard className="md:col-span-2" delay={0}>
+            <h3 className="font-display text-[26px] leading-[1.2]">
+              Works with any Postgres
+            </h3>
+            <p className="text-[14px] leading-[1.55] text-[var(--text-secondary)]">
+              Neon, Supabase, Railway, Render, Amazon RDS, or your own VPS. If
+              it speaks PostgreSQL, Strata speaks it. No proprietary connector,
+              no driver to install.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2.5">
+              <NeonBadge />
+              <SupabaseBadge />
+              <PostgresBadge />
+            </div>
+          </BentoCard>
 
-          <BentoCell className="sm:col-span-3 overflow-hidden">
-            <div className="flex h-full">
-              <div className="flex-1">
-                <CellHeader
-                  icon={<Terminal className="h-4 w-4" />}
-                  title="SQL editor"
-                  body="Run anything, get clear stats."
-                />
+          {/* AES-256 lock */}
+          <BentoCard delay={0.08}>
+            <h3 className="font-display text-[26px] leading-[1.2]">
+              AES-256 encrypted
+            </h3>
+            <p className="text-[14px] leading-[1.55] text-[var(--text-secondary)]">
+              Connection strings stored with military-grade encryption. We
+              can&apos;t read them. Neither can anyone else.
+            </p>
+            <div
+              className="mt-auto flex h-14 w-14 items-center justify-center rounded-[var(--radius-md)] text-[var(--accent)]"
+              style={{
+                background: "var(--accent-muted)",
+                boxShadow: "0 0 24px var(--accent-glow)",
+              }}
+            >
+              <svg
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                aria-hidden
+              >
+                <rect x="4" y="11" width="16" height="10" rx="2" />
+                <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+              </svg>
+            </div>
+          </BentoCard>
+
+          {/* Zero persistent connections */}
+          <BentoCard delay={0.16}>
+            <h3 className="font-display text-[26px] leading-[1.2]">
+              Zero persistent connections
+            </h3>
+            <p className="text-[14px] leading-[1.55] text-[var(--text-secondary)]">
+              We open a connection, run your query, and close it. No pooling.
+              No lingering sessions in your database.
+            </p>
+            <div className="mt-auto flex flex-wrap gap-2 font-mono text-[11px] text-[var(--text-muted)]">
+              <span className="rounded border border-[var(--border-subtle)] bg-[var(--bg-base)] px-2 py-1">
+                OPEN
+              </span>
+              <span className="rounded border border-[var(--border-subtle)] bg-[var(--bg-base)] px-2 py-1 text-[var(--text-secondary)]">
+                QUERY
+              </span>
+              <span className="rounded border border-[var(--border-subtle)] bg-[var(--bg-base)] px-2 py-1">
+                CLOSE
+              </span>
+            </div>
+          </BentoCard>
+
+          {/* Wide — SQL editor */}
+          <BentoCard className="md:col-span-2" delay={0.24}>
+            <h3 className="font-display text-[26px] leading-[1.2]">
+              SQL editor, built in
+            </h3>
+            <p className="text-[14px] leading-[1.55] text-[var(--text-secondary)]">
+              Run any query directly. Results render instantly as a table.
+              30-second timeout. No surprises.
+            </p>
+            <pre className="mt-auto overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3.5 font-mono text-[12px] leading-[1.6] text-[var(--text-secondary)]">
+              <span className="text-[var(--text-muted)]">
+                -- recent sign-ups, by plan
+              </span>
+              {"\n"}
+              <span className="text-[var(--accent)]">select</span> plan,{" "}
+              <span className="text-[var(--accent)]">count</span>(*){" "}
+              <span className="text-[var(--accent)]">as</span> n{"\n"}
+              <span className="text-[var(--accent)]">from</span>   users{"\n"}
+              <span className="text-[var(--accent)]">where</span>  created_at{" "}
+              <span className="text-[var(--accent)]">&gt;</span> now(){" "}
+              <span className="text-[var(--accent)]">-</span>{" "}
+              <span style={{ color: "#C4B5FD" }}>&apos;7 days&apos;</span>::interval
+              {"\n"}
+              <span className="text-[var(--accent)]">group by</span> plan{"\n"}
+              <span className="text-[var(--accent)]">order by</span> n{" "}
+              <span className="text-[var(--accent)]">desc</span>;
+            </pre>
+          </BentoCard>
+
+          {/* Schema explorer */}
+          <BentoCard delay={0.32}>
+            <h3 className="font-display text-[26px] leading-[1.2]">
+              Schema explorer
+            </h3>
+            <p className="text-[14px] leading-[1.55] text-[var(--text-secondary)]">
+              Browse every table, column, type, and relationship from a clean
+              sidebar. No clicking through six menus.
+            </p>
+            <div className="mt-auto font-mono text-[11px] leading-[1.9] text-[var(--text-secondary)]">
+              <div>
+                ├ <span style={{ color: "var(--accent)" }}>users</span>{" "}
+                <span style={{ color: "var(--text-muted)" }}>· 12,481</span>
               </div>
-              <div className="hidden sm:flex w-44 items-center pr-1">
-                <QueryCounter />
+              <div>
+                ├ orders{" "}
+                <span style={{ color: "var(--text-muted)" }}>· 98k</span>
+              </div>
+              <div>
+                ├ products{" "}
+                <span style={{ color: "var(--text-muted)" }}>· 412</span>
+              </div>
+              <div>
+                └ sessions{" "}
+                <span style={{ color: "var(--text-muted)" }}>· 2.1M</span>
               </div>
             </div>
-          </BentoCell>
-
-          <BentoCell className="sm:col-span-3 overflow-hidden">
-            <div className="grid h-full grid-cols-[1fr_auto] items-center gap-3">
-              <CellHeader
-                icon={<Zap className="h-4 w-4" />}
-                title="30-second timeout"
-                body="Every user query is wrapped automatically. No runaway scans."
-              />
-              <LatencyDots />
-            </div>
-          </BentoCell>
-
-          <BentoCell className="sm:col-span-2 overflow-hidden">
-            <CellHeader
-              icon={<Network className="h-4 w-4" />}
-              title="Fresh client per request"
-              body="No pool keeping zombie connections to your DB."
-            />
-          </BentoCell>
-
-          <BentoCell className="sm:col-span-2 overflow-hidden">
-            <CellHeader
-              icon={<KeyRound className="h-4 w-4" />}
-              title="Yours alone"
-              body="Every action checks session and ownership."
-            />
-          </BentoCell>
-
-          <BentoCell className="sm:col-span-2 overflow-hidden">
-            <div className="grid h-full grid-cols-[1fr_auto] items-end gap-3">
-              <CellHeader
-                icon={<Database className="h-4 w-4" />}
-                title="One workspace"
-                body="Switch between every database from one sidebar."
-              />
-              <ConnectionsStack />
-            </div>
-          </BentoCell>
+          </BentoCard>
         </div>
       </div>
     </section>
   );
 }
 
-function BentoCell({
-  className = "",
+function BentoCard({
   children,
+  className,
+  delay = 0,
 }: {
-  className?: string;
   children: React.ReactNode;
+  className?: string;
+  delay?: number;
 }) {
-  return (
-    <Reveal className={className}>
-      <div className="relative h-full rounded-xl border border-border bg-card p-5 transition-colors duration-200 hover:border-border/70">
-        {children}
-      </div>
-    </Reveal>
-  );
-}
-
-function CellHeader({
-  icon,
-  eyebrow,
-  title,
-  body,
-}: {
-  icon: React.ReactNode;
-  eyebrow?: string;
-  title: string;
-  body: string;
-}) {
-  return (
-    <div>
-      <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
-        {icon}
-      </div>
-      {eyebrow && (
-        <p className="mt-3 text-[10px] uppercase tracking-wider text-muted-foreground">
-          {eyebrow}
-        </p>
-      )}
-      <h3 className="mt-2 text-base font-medium text-foreground tracking-tight">
-        {title}
-      </h3>
-      <p className="mt-1.5 max-w-[42ch] text-sm text-muted-foreground leading-relaxed">
-        {body}
-      </p>
-    </div>
-  );
-}
-
-// ─── Visuals embedded in cells ─────────────────────────────────────────────
-
-function EncryptVisual() {
   const reduce = useReducedMotion();
   return (
-    <div className="mt-6">
-      <div className="rounded-lg border border-border bg-background/70 p-3 font-mono text-[10px] leading-relaxed">
-        <p className="text-muted-foreground">// plaintext</p>
-        <p className="text-foreground">
-          postgresql://user:hunter2@db.neon.tech:5432/prod
-        </p>
-        <motion.div
-          aria-hidden
-          initial={reduce ? { opacity: 0 } : { opacity: 0, scaleX: 0 }}
-          whileInView={
-            reduce ? { opacity: 1 } : { opacity: 1, scaleX: 1 }
-          }
-          viewport={{ once: true, margin: "-15% 0px" }}
-          transition={{
-            duration: 0.5,
-            ease: [0.23, 1, 0.32, 1],
-            delay: 0.2,
-          }}
-          style={{ originX: 0 }}
-          className="my-2 h-px bg-gradient-to-r from-primary via-primary/40 to-transparent"
-        />
-        <p className="text-muted-foreground">// stored</p>
-        <p className="break-all text-emerald-300/90">
-          a3f1c2:5b7e8f1d:4f2a8b9c1e7d3a9f1c0e2b...
-        </p>
-      </div>
-      <p className="mt-3 text-[11px] text-muted-foreground">
-        AES-256-GCM with a 16-byte random IV per write.
-      </p>
-    </div>
-  );
-}
-
-function QueryCounter() {
-  const reduce = useReducedMotion();
-  return (
-    <div className="flex w-full flex-col items-end gap-1.5">
-      <motion.div
-        initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
-        whileInView={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-15% 0px" }}
-        transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-        className="font-mono text-[11px] text-muted-foreground"
-      >
-        12,801 rows · 38 ms
-      </motion.div>
-      <motion.div
-        initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
-        whileInView={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-15% 0px" }}
-        transition={{
-          duration: 0.5,
-          ease: [0.23, 1, 0.32, 1],
-          delay: 0.08,
-        }}
-        className="font-mono text-[11px] text-muted-foreground"
-      >
-        412 rows · 18 ms
-      </motion.div>
-      <motion.div
-        initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
-        whileInView={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-15% 0px" }}
-        transition={{
-          duration: 0.5,
-          ease: [0.23, 1, 0.32, 1],
-          delay: 0.16,
-        }}
-        className="font-mono text-[11px] text-foreground"
-      >
-        1 row · 4 ms
-      </motion.div>
-    </div>
-  );
-}
-
-function LatencyDots() {
-  const reduce = useReducedMotion();
-  return (
-    <div className="flex h-16 items-end gap-1">
-      {[18, 28, 22, 32, 24, 14, 30, 16].map((h, i) => (
-        <motion.span
-          key={i}
-          initial={reduce ? { opacity: 0 } : { opacity: 0, scaleY: 0.2 }}
-          whileInView={
-            reduce ? { opacity: 1 } : { opacity: 1, scaleY: 1 }
-          }
-          viewport={{ once: true, margin: "-15% 0px" }}
-          transition={{
-            duration: 0.4,
-            ease: [0.23, 1, 0.32, 1],
-            delay: i * 0.04,
-          }}
-          style={{ height: `${h * 2}px`, originY: 1 }}
-          className={
-            "w-1.5 rounded-sm " +
-            (i === 7 ? "bg-primary" : "bg-foreground/30")
-          }
-        />
-      ))}
-    </div>
-  );
-}
-
-function ConnectionsStack() {
-  const reduce = useReducedMotion();
-  return (
-    <div className="relative h-16 w-16 shrink-0">
-      {[0, 1, 2].map((i) => (
-        <motion.div
-          key={i}
-          initial={
-            reduce
-              ? { opacity: 0 }
-              : { opacity: 0, y: 10, rotate: -6 + i * 2 }
-          }
-          whileInView={
-            reduce
-              ? { opacity: 1 }
-              : { opacity: 1, y: 0, rotate: -6 + i * 2 }
-          }
-          viewport={{ once: true, margin: "-15% 0px" }}
-          transition={{
-            duration: 0.5,
-            ease: [0.23, 1, 0.32, 1],
-            delay: 0.1 + i * 0.06,
-          }}
-          style={{
-            zIndex: 3 - i,
-            transformOrigin: "center bottom",
-          }}
-          className="absolute inset-0 rounded-md border border-border bg-background/90 shadow-md"
-        >
-          <div className="m-1.5 flex h-2 w-2 items-center">
-            <span
-              className={
-                "size-2 rounded-full " +
-                (i === 0
-                  ? "bg-primary"
-                  : i === 1
-                    ? "bg-emerald-400"
-                    : "bg-amber-400")
-              }
-            />
-          </div>
-        </motion.div>
-      ))}
-    </div>
+    <motion.article
+      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24 }}
+      whileInView={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-10% 0px" }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay }}
+      className={
+        "flex min-h-[220px] flex-col gap-3.5 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-7 transition-[background,border-color,transform] duration-[220ms] [transition-timing-function:var(--ease-out-expo)] hover:border-[var(--border-default)] hover:bg-[var(--bg-elevated)] " +
+        (className ?? "")
+      }
+    >
+      {children}
+    </motion.article>
   );
 }

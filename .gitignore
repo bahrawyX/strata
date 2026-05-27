@@ -45,3 +45,7 @@ next-env.d.ts
 
 # installed AI skill files — kept locally for reference, not part of source
 /.agents
+
+# Claude Design handoff bundle — kept locally as reference, not part of source
+/_design
+/skills-lock.json

@@ -1,88 +1,94 @@
-"use client";
-
-import Link from "next/link";
-import { motion, useReducedMotion } from "motion/react";
-import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { HeroVisual } from "./HeroVisual";
+import { Btn, Eyebrow } from "./primitives";
 
 export function Hero({ isAuthed }: { isAuthed: boolean }) {
-  const reduce = useReducedMotion();
-  const ease = [0.23, 1, 0.32, 1] as const;
-
   return (
-    <section className="relative overflow-hidden">
-      <div aria-hidden className="absolute inset-0 grid-bg opacity-50" />
-      <div aria-hidden className="absolute inset-0 hero-spotlight" />
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-background" />
+    <section
+      className="relative flex min-h-[100vh] items-center overflow-hidden pt-20"
+      data-screen-label="01 Hero"
+    >
+      {/* background layers */}
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <div
+          className="hero-grid absolute inset-0 opacity-0"
+          style={{
+            animation:
+              "fadeUp 1s var(--ease-out-expo) 100ms forwards",
+            transform: "translateY(0)",
+            // override fadeUp's translate, we only want opacity
+            // (kept minimal — keyframes target opacity+transform; reset transform here)
+          }}
+        />
+        <div
+          className="hero-glow absolute"
+          style={{
+            top: "35%",
+            left: "50%",
+            width: 800,
+            height: 800,
+            marginLeft: -400,
+            marginTop: -400,
+          }}
+        />
+        <div className="hero-noise absolute inset-0" />
+      </div>
 
-      <div className="relative mx-auto max-w-6xl px-6 pt-32 pb-24 md:pt-36 md:pb-28 lg:pt-40">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_1fr]">
-          {/* Copy */}
-          <div className="max-w-xl">
-            <motion.span
-              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
-              animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease }}
-              className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur"
+      <div className="relative z-[1] mx-auto flex w-full max-w-[1200px] flex-col items-center gap-6 px-8 text-center">
+        <div className="anim-fade-up" style={{ animationDelay: "0ms" }}>
+          <Eyebrow>Your database. Your interface.</Eyebrow>
+        </div>
+        <h1
+          className="font-display text-[clamp(40px,6.5vw,80px)] leading-[1.05] tracking-tight"
+        >
+          <span
+            className="anim-line block"
+            style={{ animationDelay: "120ms" }}
+          >
+            The layer between
+          </span>
+          <span
+            className="anim-line block"
+            style={{ animationDelay: "200ms" }}
+          >
+            <em>you and your data.</em>
+          </span>
+        </h1>
+        <p
+          className="anim-fade-up max-w-[540px] text-[18px] leading-[1.55] text-[var(--text-secondary)]"
+          style={{ animationDelay: "320ms" }}
+        >
+          Connect any PostgreSQL database in seconds. Browse tables, run
+          queries, and edit data — without ever leaving your workflow.
+        </p>
+        <div
+          className="anim-fade-up mt-3 flex items-center gap-3"
+          style={{ animationDelay: "460ms" }}
+        >
+          <Btn href={isAuthed ? "/connections" : "/signup"}>
+            {isAuthed ? "Open dashboard" : "Start for free"}
+          </Btn>
+          <Btn href="#how" variant="ghost">
+            See how it works
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
             >
-              <span className="size-1.5 rounded-full bg-primary" />
-              Now connecting Neon, Supabase, and any Postgres
-            </motion.span>
-
-            <motion.h1
-              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12 }}
-              animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, ease, delay: 0.08 }}
-              className="mt-5 text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tighter leading-[1.05]"
-            >
-              The Postgres workspace built for{" "}
-              <span className="text-primary">people who ship.</span>
-            </motion.h1>
-
-            <motion.p
-              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12 }}
-              animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, ease, delay: 0.16 }}
-              className="mt-5 max-w-[58ch] text-base md:text-lg text-muted-foreground leading-relaxed"
-            >
-              Connect a database, browse every table, edit rows, and run queries
-              from one fast, keyboard-friendly canvas — encrypted end-to-end.
-            </motion.p>
-
-            <motion.div
-              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12 }}
-              animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, ease, delay: 0.24 }}
-              className="mt-8 flex items-center gap-3"
-            >
-              {isAuthed ? (
-                <Button asChild size="lg">
-                  <Link href="/connections">
-                    Open dashboard
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              ) : (
-                <>
-                  <Button asChild size="lg">
-                    <Link href="/signup">
-                      Start free
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <Button asChild size="lg" variant="ghost">
-                    <Link href="#workflow">See it work</Link>
-                  </Button>
-                </>
-              )}
-            </motion.div>
-          </div>
-
-          {/* Animated workspace preview */}
-          <div className="relative">
-            <HeroVisual />
-          </div>
+              <path d="M5 12h14M13 5l7 7-7 7" />
+            </svg>
+          </Btn>
+        </div>
+        <div
+          className="anim-fade-up mt-4 font-mono text-[13px] text-[var(--text-muted)]"
+          style={{ animationDelay: "620ms" }}
+        >
+          Trusted by engineers at Neon, Supabase
+          <span className="mx-2 text-[var(--text-disabled)]">·</span>
+          200+ teams shipping production data
         </div>
       </div>
     </section>

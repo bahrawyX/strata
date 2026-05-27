@@ -2,11 +2,11 @@ import { getOptionalSession } from "@/server/actions/session";
 import { MarketingNavbar } from "@/components/layout/MarketingNavbar";
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
 import { Hero } from "@/components/landing/Hero";
-import { LogoStrip } from "@/components/landing/LogoStrip";
+import { ProductPreview } from "@/components/landing/ProductPreview";
+import { HowItWorks } from "@/components/landing/HowItWorks";
 import { FeatureBento } from "@/components/landing/FeatureBento";
-import { WorkflowSection } from "@/components/landing/WorkflowSection";
-import { SecurityCallout } from "@/components/landing/SecurityCallout";
-import { ClosingCta } from "@/components/landing/ClosingCta";
+import { Testimonials } from "@/components/landing/Testimonials";
+import { CtaBanner } from "@/components/landing/CtaBanner";
 
 export default async function LandingPage() {
   let isAuthed = false;
@@ -18,18 +18,16 @@ export default async function LandingPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col">
+    <div className="page-in relative flex min-h-screen flex-col">
       <MarketingNavbar isAuthed={isAuthed} />
-
-      <main className="flex-1">
+      <main>
         <Hero isAuthed={isAuthed} />
-        <LogoStrip />
+        <ProductPreview />
+        <HowItWorks />
         <FeatureBento />
-        <WorkflowSection />
-        <SecurityCallout />
-        <ClosingCta isAuthed={isAuthed} />
+        <Testimonials />
+        <CtaBanner isAuthed={isAuthed} />
       </main>
-
       <MarketingFooter />
     </div>
   );

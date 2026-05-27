@@ -1,14 +1,26 @@
 import { cn } from "@/lib/utils";
 
+/**
+ * Strata mark — five stacked horizontal bars, evoking sedimentary strata.
+ * Indigo top bar (accent), the rest in foreground with descending opacity.
+ * Verbatim from the Claude Design handoff (`_design/project/assets/logo.svg`).
+ */
 export function Logo({
   className,
-  size = 28,
+  size = 22,
+  showWordmark = true,
 }: {
   className?: string;
   size?: number;
+  showWordmark?: boolean;
 }) {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div
+      className={cn(
+        "inline-flex items-center gap-2.5 text-[14px] tracking-[0.12em] font-mono font-medium text-foreground",
+        className
+      )}
+    >
       <svg
         width={size}
         height={size}
@@ -16,26 +28,47 @@ export function Logo({
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
+        className="shrink-0"
       >
-        <rect width="32" height="32" rx="7" fill="#6366F1" />
-        <path
-          d="M9 21.5C9 22.3284 9.67157 23 10.5 23H21.5C22.3284 23 23 22.3284 23 21.5V20H9V21.5Z"
-          fill="white"
-          fillOpacity="0.55"
+        <rect x="4" y="6" width="24" height="2" rx="0.5" fill="#6366F1" />
+        <rect
+          x="6"
+          y="11"
+          width="20"
+          height="2"
+          rx="0.5"
+          fill="#F1F5F9"
+          opacity="0.95"
         />
-        <path
-          d="M9 16.5C9 17.3284 9.67157 18 10.5 18H21.5C22.3284 18 23 17.3284 23 16.5V15H9V16.5Z"
-          fill="white"
-          fillOpacity="0.8"
+        <rect
+          x="4"
+          y="16"
+          width="24"
+          height="2"
+          rx="0.5"
+          fill="#F1F5F9"
+          opacity="0.65"
         />
-        <path
-          d="M9 11.5C9 10.6716 9.67157 10 10.5 10H21.5C22.3284 10 23 10.6716 23 11.5V13H9V11.5Z"
-          fill="white"
+        <rect
+          x="8"
+          y="21"
+          width="16"
+          height="2"
+          rx="0.5"
+          fill="#F1F5F9"
+          opacity="0.35"
+        />
+        <rect
+          x="6"
+          y="26"
+          width="20"
+          height="2"
+          rx="0.5"
+          fill="#F1F5F9"
+          opacity="0.18"
         />
       </svg>
-      <span className="text-base font-semibold tracking-tight text-foreground">
-        Strata
-      </span>
+      {showWordmark && <span>STRATA</span>}
     </div>
   );
 }
