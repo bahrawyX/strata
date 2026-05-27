@@ -40,7 +40,7 @@ export default function RootLayout({
       lang="en"
       className={`${dmSans.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} h-full`}
       suppressHydrationWarning
-    >
+    > 
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <ThemeProvider>
           <LenisProvider>

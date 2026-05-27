@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Btn, Eyebrow } from "./primitives";
 
@@ -7,11 +8,38 @@ const LINES = ["Stop context-switching.", "Your data is one tab away."];
 
 export function CtaBanner({ isAuthed }: { isAuthed: boolean }) {
   const reduce = useReducedMotion();
+
   // Per-word split, mirroring the design's [data-split-words] behaviour.
-  const wordTokens = LINES.flatMap((line, lineIdx) => {
-    const words = line.split(" ").map((w) => ({ word: w, line: lineIdx }));
-    return words;
-  });
+  // Words on the first line render first; a <br /> separates lines; words on
+  // the second line follow. Spaces are emitted as plain text nodes BETWEEN
+  // word spans (not inside them) so inline-block whitespace stripping doesn't
+  // glue everything together.
+  let runningIndex = 0;
+  const renderLine = (line: string, lineIdx: number) =>
+    line.split(" ").map((word, i) => {
+      const idx = runningIndex++;
+      const isFirst = i === 0;
+      return (
+        <Fragment key={`${lineIdx}-${idx}-${word}`}>
+          {!isFirst && " "}
+          <motion.span
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 20 }}
+            whileInView={
+              reduce ? { opacity: 1 } : { opacity: 1, y: 0 }
+            }
+            viewport={{ once: true, margin: "-10% 0px" }}
+            transition={{
+              duration: 0.6,
+              ease: [0.16, 1, 0.3, 1],
+              delay: idx * 0.05,
+            }}
+            className="inline-block"
+          >
+            {word}
+          </motion.span>
+        </Fragment>
+      );
+    });
 
   return (
     <section
@@ -33,36 +61,9 @@ export function CtaBanner({ isAuthed }: { isAuthed: boolean }) {
       <div className="relative mx-auto flex max-w-[1200px] flex-col items-center gap-5">
         <Eyebrow accent>// Get started</Eyebrow>
         <h2 className="font-display text-[clamp(36px,4.5vw,56px)]">
-          {wordTokens.map((tok, i) => {
-            const isFirstOnLine =
-              i === 0 ||
-              wordTokens[i - 1].line !== tok.line;
-            return (
-              <motion.span
-                key={`${tok.word}-${i}`}
-                initial={
-                  reduce ? { opacity: 0 } : { opacity: 0, y: 20 }
-                }
-                whileInView={
-                  reduce ? { opacity: 1 } : { opacity: 1, y: 0 }
-                }
-                viewport={{ once: true, margin: "-10% 0px" }}
-                transition={{
-                  duration: 0.6,
-                  ease: [0.16, 1, 0.3, 1],
-                  delay: i * 0.05,
-                }}
-                className="inline-block"
-              >
-                {!isFirstOnLine && " "}
-                {tok.word}
-                {tok.line === 0 &&
-                  i === wordTokens.findIndex((x) => x.line === 0) +
-                    LINES[0].split(" ").length -
-                    1 && <br />}
-              </motion.span>
-            );
-          })}
+          {renderLine(LINES[0], 0)}
+          <br />
+          {renderLine(LINES[1], 1)}
         </h2>
         <p className="text-[14px] text-[var(--text-muted)]">
           Free to start · No credit card
@@ -70,9 +71,7 @@ export function CtaBanner({ isAuthed }: { isAuthed: boolean }) {
         <motion.div
           initial={false}
           whileInView={
-            reduce
-              ? undefined
-              : { scale: [1, 1.03, 1] }
+            reduce ? undefined : { scale: [1, 1.03, 1] }
           }
           viewport={{ once: true, margin: "-10% 0px" }}
           transition={{ duration: 0.7, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}

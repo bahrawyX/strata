@@ -127,7 +127,7 @@ export function MarketingNavbar({ isAuthed }: { isAuthed: boolean }) {
           <ThemeToggle />
           <Link
             href={isAuthed ? "/connections" : "/signup"}
-            className="ml-0.5 inline-flex h-8 items-center rounded-full bg-[var(--accent)] px-3.5 text-[13px] font-medium text-white transition-colors duration-200 hover:bg-[var(--accent-hover)]"
+            className="ml-0.5 inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-full bg-[var(--accent)] px-3.5 text-[13px] font-medium text-white transition-colors duration-200 hover:bg-[var(--accent-hover)]"
           >
             {isAuthed ? "Open app" : "Get started"}
           </Link>

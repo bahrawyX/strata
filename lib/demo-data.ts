@@ -14,7 +14,10 @@ import type {
   TableRow,
 } from "@/server/actions/table";
 
-export const DEMO_CONNECTION_ID = "00000000-0000-0000-0000-000000000001";
+// Sentinel UUID for the demo connection. Valid UUID-v4 format (version 4,
+// variant 8) so it passes the same z.string().uuid() validators that the
+// real-connection actions use.
+export const DEMO_CONNECTION_ID = "00000000-0000-4000-8000-000000000001";
 
 export const DEMO_CONNECTION: ConnectionSummary = {
   id: DEMO_CONNECTION_ID,

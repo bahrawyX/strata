@@ -6,9 +6,6 @@ export function Hero({ isAuthed }: { isAuthed: boolean }) {
       className="relative flex min-h-[100vh] items-center overflow-hidden pt-20"
       data-screen-label="01 Hero"
     >
-      {/* background layers — theme-aware via CSS custom properties */}
-      <div className="pointer-events-none absolute inset-0 z-0">
-        <div className="hero-grid absolute inset-0" />
         <div
           className="hero-glow absolute"
           style={{
@@ -20,10 +17,8 @@ export function Hero({ isAuthed }: { isAuthed: boolean }) {
             marginTop: -400,
           }}
         />
-        <div className="hero-noise absolute inset-0" />
-      </div>
 
-      <div className="relative z-[1] mx-auto flex w-full max-w-[1200px] flex-col items-center gap-6 px-8 text-center">
+      <div className="relative z-1 mx-auto flex w-full max-w-300 flex-col items-center gap-6 px-8 text-center">
         <div className="anim-fade-up" style={{ animationDelay: "0ms" }}>
           <Eyebrow>Your database. Your interface.</Eyebrow>
         </div>
