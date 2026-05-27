@@ -3,7 +3,11 @@
 import type { FieldDef } from "pg";
 import { getClient } from "@/lib/user-db";
 import { sqlQuerySchema } from "@/lib/validations";
-import { requireSession } from "./session";
+import {
+  getDemoQueryResult,
+  isDemoConnectionId,
+} from "@/lib/demo-data";
+import { getOptionalSession } from "./session";
 import { getConnectionRecordForUser } from "./connections";
 import type { ActionResult } from "./connections";
 
@@ -24,19 +28,28 @@ export async function executeQuery(input: {
   connectionId: string;
   query: string;
 }): Promise<ActionResult<QueryResult>> {
-  let session;
-  try {
-    session = await requireSession();
-  } catch {
-    return { error: "You must be signed in." };
-  }
-
   const parsed = sqlQuerySchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid query." };
   }
-
   const { connectionId, query } = parsed.data;
+
+  if (isDemoConnectionId(connectionId)) {
+    const result = getDemoQueryResult(query);
+    return {
+      data: {
+        ...result,
+        // Small jitter so the latency number doesn't look templated.
+        executionTimeMs: Math.max(8, Math.round(Math.random() * 22) + 4),
+      },
+    };
+  }
+
+  const session = await getOptionalSession().catch(() => null);
+  if (!session) {
+    return { error: "Sign in to run live queries." };
+  }
+
   const record = await getConnectionRecordForUser(
     connectionId,
     session.user.id

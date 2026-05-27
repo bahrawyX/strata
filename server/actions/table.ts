@@ -9,7 +9,8 @@ import {
   deleteRowSchema,
   identifierSchema,
 } from "@/lib/validations";
-import { requireSession } from "./session";
+import { getDemoTableData, isDemoConnectionId } from "@/lib/demo-data";
+import { getOptionalSession, requireSession } from "./session";
 import { getConnectionRecordForUser } from "./connections";
 import { getTableColumns, type ColumnInfo } from "./schema";
 import type { ActionResult } from "./connections";
@@ -24,6 +25,9 @@ export type TableDataResult = {
   pageSize: number;
   primaryKey: string | null;
 };
+
+const DEMO_WRITE_DENIED =
+  "Demo mode — sign in and connect a real Postgres to edit rows.";
 
 function validateColumnNames(
   input: Record<string, unknown>,
@@ -45,19 +49,23 @@ export async function getTableData(input: {
   page?: number;
   pageSize?: number;
 }): Promise<ActionResult<TableDataResult>> {
-  let session;
-  try {
-    session = await requireSession();
-  } catch {
-    return { error: "You must be signed in." };
-  }
-
   const parsed = tableDataParamsSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
   const { connectionId, tableName, schema, page, pageSize } = parsed.data;
+
+  if (isDemoConnectionId(connectionId)) {
+    const data = getDemoTableData(tableName, page, pageSize);
+    if (!data) return { error: "Table not found in demo data." };
+    return { data };
+  }
+
+  const session = await getOptionalSession().catch(() => null);
+  if (!session) {
+    return { error: "Sign in to inspect real tables." };
+  }
   const record = await getConnectionRecordForUser(
     connectionId,
     session.user.id
@@ -120,18 +128,22 @@ export async function insertRow(input: {
   schema?: string;
   values: Record<string, unknown>;
 }): Promise<ActionResult<{ inserted: TableRow }>> {
-  let session;
-  try {
-    session = await requireSession();
-  } catch {
-    return { error: "You must be signed in." };
-  }
-
   const parsed = insertRowSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
   const { connectionId, tableName, schema, values } = parsed.data;
+
+  if (isDemoConnectionId(connectionId)) {
+    return { error: DEMO_WRITE_DENIED };
+  }
+
+  let session;
+  try {
+    session = await requireSession();
+  } catch {
+    return { error: DEMO_WRITE_DENIED };
+  }
 
   const record = await getConnectionRecordForUser(
     connectionId,
@@ -189,13 +201,6 @@ export async function updateRow(input: {
   primaryKeyValue: unknown;
   values: Record<string, unknown>;
 }): Promise<ActionResult<{ updated: TableRow }>> {
-  let session;
-  try {
-    session = await requireSession();
-  } catch {
-    return { error: "You must be signed in." };
-  }
-
   const parsed = updateRowSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -208,6 +213,17 @@ export async function updateRow(input: {
     primaryKeyValue,
     values,
   } = parsed.data;
+
+  if (isDemoConnectionId(connectionId)) {
+    return { error: DEMO_WRITE_DENIED };
+  }
+
+  let session;
+  try {
+    session = await requireSession();
+  } catch {
+    return { error: DEMO_WRITE_DENIED };
+  }
 
   const record = await getConnectionRecordForUser(
     connectionId,
@@ -275,13 +291,6 @@ export async function deleteRow(input: {
   primaryKeyValue: unknown;
   isConfirmed: true;
 }): Promise<ActionResult<{ deleted: TableRow }>> {
-  let session;
-  try {
-    session = await requireSession();
-  } catch {
-    return { error: "You must be signed in." };
-  }
-
   const parsed = deleteRowSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -293,6 +302,17 @@ export async function deleteRow(input: {
     primaryKeyColumn,
     primaryKeyValue,
   } = parsed.data;
+
+  if (isDemoConnectionId(connectionId)) {
+    return { error: DEMO_WRITE_DENIED };
+  }
+
+  let session;
+  try {
+    session = await requireSession();
+  } catch {
+    return { error: DEMO_WRITE_DENIED };
+  }
 
   const record = await getConnectionRecordForUser(
     connectionId,

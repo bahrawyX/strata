@@ -1,16 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/", "/api/auth"];
-
-function isPublic(pathname: string): boolean {
-  return PUBLIC_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(p + "/")
-  );
-}
-
-export async function proxy(request: NextRequest): Promise<NextResponse> {
+/**
+ * Demo mode: the dashboard is browsable without authentication. The proxy
+ * doesn't gate anything for now — it only handles static-asset short-circuit.
+ * When real auth comes back, restore the redirect logic here.
+ */
+export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
-
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
@@ -18,25 +14,6 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   ) {
     return NextResponse.next();
   }
-
-  const sessionCookie =
-    request.cookies.get("better-auth.session_token")?.value ??
-    request.cookies.get("__Secure-better-auth.session_token")?.value;
-  const isAuthed = Boolean(sessionCookie);
-
-  if (!isAuthed && !isPublic(pathname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(url);
-  }
-
-  if (isAuthed && (pathname === "/login" || pathname === "/signup")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/connections";
-    return NextResponse.redirect(url);
-  }
-
   return NextResponse.next();
 }
 

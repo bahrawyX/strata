@@ -7,7 +7,8 @@ import { connections } from "@/lib/schema";
 import { encrypt } from "@/lib/crypto";
 import { getClient, testConnectionString } from "@/lib/user-db";
 import { newConnectionSchema } from "@/lib/validations";
-import { requireSession } from "./session";
+import { DEMO_CONNECTION, isDemoConnectionId } from "@/lib/demo-data";
+import { getOptionalSession, requireSession } from "./session";
 
 export type ActionResult<T> = { data: T } | { error: string };
 
@@ -38,7 +39,10 @@ export async function createConnection(input: {
   try {
     session = await requireSession();
   } catch {
-    return { error: "You must be signed in to add a connection." };
+    return {
+      error:
+        "Demo mode — sign in to save connections. (Real accounts coming soon.)",
+    };
   }
 
   const parsed = newConnectionSchema.safeParse(input);
@@ -76,11 +80,9 @@ export async function createConnection(input: {
 export async function getConnections(): Promise<
   ActionResult<ConnectionSummary[]>
 > {
-  let session;
-  try {
-    session = await requireSession();
-  } catch {
-    return { error: "You must be signed in." };
+  const session = await getOptionalSession().catch(() => null);
+  if (!session) {
+    return { data: [DEMO_CONNECTION] };
   }
   try {
     const rows = await db
@@ -88,6 +90,11 @@ export async function getConnections(): Promise<
       .from(connections)
       .where(eq(connections.userId, session.user.id))
       .orderBy(desc(connections.createdAt));
+    if (rows.length === 0) {
+      // Authed user with no real connections yet — still show the demo so
+      // they have something to click into.
+      return { data: [DEMO_CONNECTION] };
+    }
     return { data: rows.map(toSummary) };
   } catch (err) {
     console.error("getConnections failed", err);
@@ -98,11 +105,12 @@ export async function getConnections(): Promise<
 export async function getConnectionById(
   id: string
 ): Promise<ActionResult<ConnectionSummary>> {
-  let session;
-  try {
-    session = await requireSession();
-  } catch {
-    return { error: "You must be signed in." };
+  if (isDemoConnectionId(id)) {
+    return { data: DEMO_CONNECTION };
+  }
+  const session = await getOptionalSession().catch(() => null);
+  if (!session) {
+    return { error: "Sign in to view that connection." };
   }
   try {
     const [row] = await db
@@ -125,11 +133,14 @@ export async function getConnectionById(
 export async function deleteConnection(
   id: string
 ): Promise<ActionResult<{ id: string }>> {
+  if (isDemoConnectionId(id)) {
+    return { error: "The demo connection can't be deleted." };
+  }
   let session;
   try {
     session = await requireSession();
   } catch {
-    return { error: "You must be signed in." };
+    return { error: "Sign in to manage connections." };
   }
   try {
     const result = await db
@@ -153,11 +164,15 @@ export async function deleteConnection(
 export async function testConnection(
   id: string
 ): Promise<ActionResult<{ latencyMs: number }>> {
+  if (isDemoConnectionId(id)) {
+    // Pretend a fast round-trip — keeps the UI honest about latency UX.
+    return { data: { latencyMs: 18 } };
+  }
   let session;
   try {
     session = await requireSession();
   } catch {
-    return { error: "You must be signed in." };
+    return { error: "Sign in to test connections." };
   }
   let client;
   const startedAt = Date.now();

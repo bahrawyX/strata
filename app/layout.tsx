@@ -43,7 +43,13 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <ThemeProvider>
-          <LenisProvider>{children}</LenisProvider>
+          <LenisProvider>
+            {/* Site-wide grain — fixed full-viewport layer behind content. */}
+            <div className="site-noise" aria-hidden />
+            <div className="relative z-[1] flex min-h-full flex-1 flex-col">
+              {children}
+            </div>
+          </LenisProvider>
         </ThemeProvider>
       </body>
     </html>

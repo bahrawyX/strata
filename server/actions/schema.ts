@@ -1,7 +1,13 @@
 "use server";
 
 import { getClient } from "@/lib/user-db";
-import { requireSession } from "./session";
+import {
+  DEMO_COLUMNS,
+  DEMO_STATS,
+  DEMO_TABLES,
+  isDemoConnectionId,
+} from "@/lib/demo-data";
+import { getOptionalSession } from "./session";
 import { getConnectionRecordForUser } from "./connections";
 import type { ActionResult } from "./connections";
 
@@ -29,11 +35,12 @@ export type DbStats = {
 export async function getTables(
   connectionId: string
 ): Promise<ActionResult<TableInfo[]>> {
-  let session;
-  try {
-    session = await requireSession();
-  } catch {
-    return { error: "You must be signed in." };
+  if (isDemoConnectionId(connectionId)) {
+    return { data: DEMO_TABLES };
+  }
+  const session = await getOptionalSession().catch(() => null);
+  if (!session) {
+    return { error: "Sign in to inspect real schemas." };
   }
   const record = await getConnectionRecordForUser(
     connectionId,
@@ -89,11 +96,14 @@ export async function getTableColumns(
   schemaName: string,
   tableName: string
 ): Promise<ActionResult<ColumnInfo[]>> {
-  let session;
-  try {
-    session = await requireSession();
-  } catch {
-    return { error: "You must be signed in." };
+  if (isDemoConnectionId(connectionId)) {
+    const cols = DEMO_COLUMNS[tableName];
+    if (!cols) return { error: "Table not found in demo data." };
+    return { data: cols };
+  }
+  const session = await getOptionalSession().catch(() => null);
+  if (!session) {
+    return { error: "Sign in to inspect real tables." };
   }
   const record = await getConnectionRecordForUser(
     connectionId,
@@ -160,11 +170,12 @@ export async function getTableColumns(
 export async function getDbStats(
   connectionId: string
 ): Promise<ActionResult<DbStats>> {
-  let session;
-  try {
-    session = await requireSession();
-  } catch {
-    return { error: "You must be signed in." };
+  if (isDemoConnectionId(connectionId)) {
+    return { data: DEMO_STATS };
+  }
+  const session = await getOptionalSession().catch(() => null);
+  if (!session) {
+    return { error: "Sign in to inspect real databases." };
   }
   const record = await getConnectionRecordForUser(
     connectionId,
