@@ -95,6 +95,19 @@ export const updateSavedQuerySchema = z.object({
 export type SaveQueryInput = z.infer<typeof saveQuerySchema>;
 export type UpdateSavedQueryInput = z.infer<typeof updateSavedQuerySchema>;
 
+export const environmentSchema = z.enum(["dev", "staging", "production"]);
+export type Environment = z.infer<typeof environmentSchema>;
+
+export const updateConnectionEnvironmentSchema = z.object({
+  connectionId: z.string().uuid(),
+  environment: environmentSchema,
+});
+
+export const toggleReadOnlySchema = z.object({
+  connectionId: z.string().uuid(),
+  readOnly: z.boolean(),
+});
+
 export const sqlQuerySchema = z.object({
   connectionId: z.string().uuid("Invalid connection id."),
   query: z

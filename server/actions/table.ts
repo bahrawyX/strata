@@ -12,6 +12,7 @@ import {
 import { getDemoTableData, isDemoConnectionId } from "@/lib/demo-data";
 import { recordActivity } from "@/lib/activity";
 import { redactErrorMessage, summarizeForAuditLog } from "@/lib/redact";
+import { READ_ONLY_REFUSAL } from "@/lib/write-guard";
 import { getOptionalSession, requireSession } from "./session";
 import { getConnectionRecordForUser } from "./connections";
 import { getTableColumns, type ColumnInfo } from "./schema";
@@ -152,6 +153,7 @@ export async function insertRow(input: {
     session.user.id
   );
   if (!record) return { error: "Connection not found." };
+  if (record.readOnly) return { error: READ_ONLY_REFUSAL };
 
   const columnsResult = await getTableColumns(connectionId, schema, tableName);
   if ("error" in columnsResult) return { error: columnsResult.error };
@@ -242,6 +244,7 @@ export async function updateRow(input: {
     session.user.id
   );
   if (!record) return { error: "Connection not found." };
+  if (record.readOnly) return { error: READ_ONLY_REFUSAL };
 
   const columnsResult = await getTableColumns(connectionId, schema, tableName);
   if ("error" in columnsResult) return { error: columnsResult.error };
@@ -341,6 +344,7 @@ export async function deleteRow(input: {
     session.user.id
   );
   if (!record) return { error: "Connection not found." };
+  if (record.readOnly) return { error: READ_ONLY_REFUSAL };
 
   const columnsResult = await getTableColumns(connectionId, schema, tableName);
   if ("error" in columnsResult) return { error: columnsResult.error };

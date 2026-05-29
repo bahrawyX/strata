@@ -14,7 +14,9 @@ import {
 import { cn } from "@/lib/utils";
 import type { TableInfo } from "@/server/actions/schema";
 import type { ConnectionHealth as ConnectionHealthType } from "@/server/actions/activity";
+import type { Environment } from "@/lib/validations";
 import { ConnectionHealth } from "./ConnectionHealth";
+import { EnvironmentSettings } from "./EnvironmentSettings";
 
 export function SchemaTree({
   connectionId,
@@ -22,12 +24,16 @@ export function SchemaTree({
   tables,
   health,
   isDemo,
+  environment,
+  readOnly,
 }: {
   connectionId: string;
   connectionName: string;
   tables: TableInfo[];
   health: ConnectionHealthType;
   isDemo: boolean;
+  environment: Environment;
+  readOnly: boolean;
 }) {
   const pathname = usePathname();
 
@@ -53,6 +59,13 @@ export function SchemaTree({
         connectionId={connectionId}
         isDemo={isDemo}
         initialHealth={health}
+      />
+
+      <EnvironmentSettings
+        connectionId={connectionId}
+        initialEnvironment={environment}
+        initialReadOnly={readOnly}
+        disabled={isDemo}
       />
 
       <nav className="p-2">

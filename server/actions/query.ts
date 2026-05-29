@@ -9,6 +9,7 @@ import {
 } from "@/lib/demo-data";
 import { recordActivity } from "@/lib/activity";
 import { redactErrorMessage, summarizeForAuditLog } from "@/lib/redact";
+import { READ_ONLY_REFUSAL, isDestructiveSql } from "@/lib/write-guard";
 import { getOptionalSession } from "./session";
 import { getConnectionRecordForUser } from "./connections";
 import type { ActionResult } from "./connections";
@@ -72,6 +73,21 @@ export async function executeQuery(input: {
     session.user.id
   );
   if (!record) return { error: "Connection not found." };
+
+  // Read-only guard: refuse non-SELECT statements when the connection has
+  // been marked read-only. Cheap textual check — the DB role is the
+  // authoritative gate, this is the UX one.
+  if (record.readOnly && isDestructiveSql(query)) {
+    await recordActivity({
+      userId: session.user.id,
+      connectionId,
+      action: "query.execute",
+      success: false,
+      detail: "blocked: read-only",
+      queryPreview,
+    });
+    return { error: READ_ONLY_REFUSAL };
+  }
 
   let client;
   try {

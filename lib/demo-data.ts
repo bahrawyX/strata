@@ -66,6 +66,11 @@ export const DEMO_CONNECTION: ConnectionSummary = {
   id: DEMO_CONNECTION_ID,
   name: "Demo · production-db",
   dbType: "postgres",
+  // Demo is always production + read-only — both because we don't have a
+  // real DB underneath and because we want the production banner to be
+  // visible without forcing a sign-up step.
+  environment: "production",
+  readOnly: true,
   lastConnectedAt: new Date(Date.now() - 1000 * 60 * 4),
   createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12),
 };

@@ -36,6 +36,13 @@
       "when": 1780063286929,
       "tag": "0004_fuzzy_dust",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780064166027,
+      "tag": "0005_premium_rogue",
+      "breakpoints": true
     }
   ]
 }

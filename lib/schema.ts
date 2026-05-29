@@ -69,6 +69,16 @@ export const connections = pgTable("connections", {
   name: varchar("name", { length: 100 }).notNull(),
   encryptedConnectionString: text("encrypted_connection_string").notNull(),
   dbType: varchar("db_type", { length: 20 }).notNull().default("postgres"),
+  // 'dev' | 'staging' | 'production' — flips the banner color and gates
+  // some safety behaviors. New connections default to 'dev' so the
+  // destructive-tint production banner is never the first impression on
+  // a fresh paste-in.
+  environment: varchar("environment", { length: 16 }).notNull().default("dev"),
+  // Hard refuse on insert/update/delete/non-SELECT executeQuery/export
+  // when this is true, regardless of the user's plan. Independent of
+  // `environment` so a dev who wants a staging connection they can't
+  // accidentally mutate can flip just this.
+  readOnly: boolean("read_only").notNull().default(false),
   lastConnectedAt: timestamp("last_connected_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

@@ -9,6 +9,9 @@ import { getClient, testConnectionString } from "@/lib/user-db";
 import {
   newConnectionSchema,
   rotateConnectionStringSchema,
+  toggleReadOnlySchema,
+  updateConnectionEnvironmentSchema,
+  type Environment,
 } from "@/lib/validations";
 import { DEMO_CONNECTION, isDemoConnectionId } from "@/lib/demo-data";
 import { recordActivity } from "@/lib/activity";
@@ -21,6 +24,8 @@ export type ConnectionSummary = {
   id: string;
   name: string;
   dbType: "neon" | "supabase" | "postgres";
+  environment: Environment;
+  readOnly: boolean;
   lastConnectedAt: Date | null;
   createdAt: Date;
 };
@@ -30,6 +35,8 @@ function toSummary(row: typeof connections.$inferSelect): ConnectionSummary {
     id: row.id,
     name: row.name,
     dbType: row.dbType as ConnectionSummary["dbType"],
+    environment: (row.environment as Environment) ?? "dev",
+    readOnly: row.readOnly ?? false,
     lastConnectedAt: row.lastConnectedAt,
     createdAt: row.createdAt,
   };
@@ -340,4 +347,91 @@ export async function getConnectionRecordForUser(
     .where(and(eq(connections.id, id), eq(connections.userId, userId)))
     .limit(1);
   return row ?? null;
+}
+
+export async function updateConnectionEnvironment(input: {
+  connectionId: string;
+  environment: Environment;
+}): Promise<ActionResult<ConnectionSummary>> {
+  const parsed = updateConnectionEnvironmentSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+  if (isDemoConnectionId(parsed.data.connectionId)) {
+    return {
+      error:
+        "Demo connection's environment is fixed. Sign up to manage real connections.",
+    };
+  }
+  let session;
+  try {
+    session = await requireSession();
+  } catch {
+    return { error: "Sign in to manage connections." };
+  }
+  try {
+    const [row] = await db
+      .update(connections)
+      .set({
+        environment: parsed.data.environment,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(connections.id, parsed.data.connectionId),
+          eq(connections.userId, session.user.id)
+        )
+      )
+      .returning();
+    if (!row) return { error: "Connection not found." };
+    revalidatePath("/connections");
+    revalidatePath(`/db/${parsed.data.connectionId}`);
+    return { data: toSummary(row) };
+  } catch (err) {
+    console.error("updateConnectionEnvironment failed", err);
+    return { error: "Could not update the environment." };
+  }
+}
+
+export async function toggleConnectionReadOnly(input: {
+  connectionId: string;
+  readOnly: boolean;
+}): Promise<ActionResult<ConnectionSummary>> {
+  const parsed = toggleReadOnlySchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+  if (isDemoConnectionId(parsed.data.connectionId)) {
+    return {
+      error: "Demo connection is always read-only.",
+    };
+  }
+  let session;
+  try {
+    session = await requireSession();
+  } catch {
+    return { error: "Sign in to manage connections." };
+  }
+  try {
+    const [row] = await db
+      .update(connections)
+      .set({
+        readOnly: parsed.data.readOnly,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(connections.id, parsed.data.connectionId),
+          eq(connections.userId, session.user.id)
+        )
+      )
+      .returning();
+    if (!row) return { error: "Connection not found." };
+    revalidatePath("/connections");
+    revalidatePath(`/db/${parsed.data.connectionId}`);
+    return { data: toSummary(row) };
+  } catch (err) {
+    console.error("toggleConnectionReadOnly failed", err);
+    return { error: "Could not update read-only mode." };
+  }
 }
