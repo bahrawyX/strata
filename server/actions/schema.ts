@@ -18,6 +18,15 @@ export type ColumnInfo = {
   isNullable: boolean;
   isPrimaryKey: boolean;
   defaultValue: string | null;
+  /**
+   * GENERATED ALWAYS AS (...) columns can't be inserted into or updated
+   * directly. We flag them here so the row editor disables the input and
+   * strips the value from the write payload. Mapped from pg_attribute.attgenerated:
+   *   ''  → normal column      → false
+   *   's' → STORED generated   → true
+   *   'v' → VIRTUAL generated  → true (Postgres 17+)
+   */
+  isGenerated: boolean;
 };
 
 export type TableInfo = {
@@ -142,7 +151,8 @@ export async function getTableColumns(
           WHERE con.conrelid = a.attrelid
             AND con.contype = 'p'
             AND a.attnum = ANY (con.conkey)
-        ) AS is_primary_key
+        ) AS is_primary_key,
+        (a.attgenerated <> '') AS is_generated
       FROM pg_attribute a
       LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
       JOIN pg_class c ON c.oid = a.attrelid
@@ -159,6 +169,7 @@ export async function getTableColumns(
       is_nullable: boolean;
       default_value: string | null;
       is_primary_key: boolean;
+      is_generated: boolean;
     }>(sql, [schemaName, tableName]);
     return {
       data: result.rows.map((r) => ({
@@ -167,6 +178,7 @@ export async function getTableColumns(
         isNullable: r.is_nullable,
         isPrimaryKey: r.is_primary_key,
         defaultValue: r.default_value,
+        isGenerated: r.is_generated,
       })),
     };
   } catch (err) {
