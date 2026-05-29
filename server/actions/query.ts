@@ -7,6 +7,8 @@ import {
   getDemoQueryResult,
   isDemoConnectionId,
 } from "@/lib/demo-data";
+import { recordActivity } from "@/lib/activity";
+import { redactErrorMessage, summarizeForAuditLog } from "@/lib/redact";
 import { getOptionalSession } from "./session";
 import { getConnectionRecordForUser } from "./connections";
 import type { ActionResult } from "./connections";
@@ -36,11 +38,19 @@ export async function executeQuery(input: {
 
   if (isDemoConnectionId(connectionId)) {
     const result = getDemoQueryResult(query);
+    const fakeLatency = Math.max(8, Math.round(Math.random() * 22) + 4);
+    await recordActivity({
+      userId: null,
+      connectionId,
+      action: "query.execute",
+      success: true,
+      latencyMs: fakeLatency,
+      detail: "demo",
+    });
     return {
       data: {
         ...result,
-        // Small jitter so the latency number doesn't look templated.
-        executionTimeMs: Math.max(8, Math.round(Math.random() * 22) + 4),
+        executionTimeMs: fakeLatency,
       },
     };
   }
@@ -64,6 +74,14 @@ export async function executeQuery(input: {
     const result = await client.query(query);
     const executionTimeMs = Date.now() - start;
     const single = Array.isArray(result) ? result[result.length - 1] : result;
+    await recordActivity({
+      userId: session.user.id,
+      connectionId,
+      action: "query.execute",
+      success: true,
+      latencyMs: executionTimeMs,
+      detail: single.command ?? null,
+    });
     return {
       data: {
         rows: (single.rows ?? []) as Record<string, unknown>[],
@@ -78,11 +96,14 @@ export async function executeQuery(input: {
     };
   } catch (err) {
     console.error("executeQuery failed", err);
-    const message =
-      err instanceof Error && err.message
-        ? sanitizePgError(err.message)
-        : "Query failed.";
-    return { error: `Query failed: ${message}` };
+    await recordActivity({
+      userId: session.user.id,
+      connectionId,
+      action: "query.execute",
+      success: false,
+      detail: summarizeForAuditLog("query", err),
+    });
+    return { error: `Query failed: ${redactErrorMessage(err)}` };
   } finally {
     if (client) {
       try {
@@ -92,12 +113,4 @@ export async function executeQuery(input: {
       }
     }
   }
-}
-
-function sanitizePgError(message: string): string {
-  return message
-    .replace(/at\s+[\w./\\:-]+:\d+(?::\d+)?/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 280);
 }

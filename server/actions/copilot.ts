@@ -50,8 +50,8 @@ export async function askSqlCopilot(input: {
       ok: false,
       error:
         upgradeTier === "demo"
-          ? "You've used your 3 free co-pilot drafts. Sign up to keep going — 5 per day on the free plan."
-          : "You've hit today's free co-pilot limit (5/day). Upgrade to Pro for unlimited drafts.",
+          ? `You've used today's demo allowance (${plan.copilotLimit} co-pilot drafts). Create a free account to keep going.`
+          : `You've hit today's co-pilot cap (${plan.copilotLimit} drafts). The counter resets at midnight UTC.`,
       recoverable: false,
       upgrade: {
         tier: upgradeTier,

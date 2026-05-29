@@ -88,18 +88,32 @@ export default async function BillingPage({
       </section>
 
       <section className="rounded-lg border border-border bg-card p-5">
-        <h3 className="text-sm font-medium">Plans</h3>
-        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="flex items-start gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--accent-muted)] text-[var(--accent)]">
+            <Zap className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium">Strata is in early access</h3>
+            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+              Everything works on the free tier. The Pro plan is here for
+              when usage takes off — paid features are listed below but not
+              gated yet, and the daily co-pilot cap is generous (50 drafts
+              for free accounts) to keep our model budget sane, not to push
+              you into payments.
+            </p>
+          </div>
+        </div>
+        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
           <PlanCard
             tier="free"
             current={plan.tier === "free"}
             title="Free"
             price="$0"
             features={[
-              "1 connection",
-              "5 AI co-pilot drafts per day",
-              "Browse tables, run SQL",
-              "AES-256 encrypted",
+              "Unlimited connections (during early access)",
+              "50 AI co-pilot drafts per day",
+              "Full table viewer + SQL editor",
+              "AES-256-GCM encrypted at rest",
             ]}
           />
           <PlanCard
@@ -109,9 +123,9 @@ export default async function BillingPage({
             price="$20"
             highlighted
             features={[
-              "Unlimited connections",
-              "Unlimited AI co-pilot drafts",
+              "Unlimited co-pilot drafts",
               "Saved queries + share links",
+              "Audit-log export",
               "Priority support",
             ]}
           />

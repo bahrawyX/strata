@@ -210,41 +210,32 @@ export function CopilotPanel({ connectionId, onInsert, onReplace }: Props) {
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-[var(--text-primary)]">
                     {upgrade.tier === "demo"
-                      ? "You've used your 3 free drafts"
-                      : "Daily limit reached"}
+                      ? "You've reached today's demo allowance"
+                      : "You've hit today's co-pilot cap"}
                   </p>
                   <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
                     {upgrade.tier === "demo"
-                      ? "Sign up to get 5 drafts per day on the free plan, or go Pro for unlimited."
-                      : "Free accounts get 5 drafts per day. Upgrade to Pro for unlimited."}
+                      ? "Strata is in early access — create a free account for a much higher daily allowance, no card needed."
+                      : "The counter resets at midnight UTC. We cap to keep costs sane while we're in early access."}
                   </p>
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-2">
-                {upgrade.tier === "demo" ? (
-                  <>
-                    <Link
-                      href="/signup"
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--accent)] px-3 text-xs font-medium text-white transition-colors hover:bg-[var(--accent-hover)]"
-                    >
-                      Create a free account
-                    </Link>
-                    <Link
-                      href="/settings/billing"
-                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-transparent px-3 text-xs font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-elevated)]"
-                    >
-                      See Pro
-                    </Link>
-                  </>
-                ) : (
+              {upgrade.tier === "demo" && (
+                <div className="mt-3 flex items-center gap-2">
                   <Link
-                    href="/settings/billing"
+                    href="/signup"
                     className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--accent)] px-3 text-xs font-medium text-white transition-colors hover:bg-[var(--accent-hover)]"
                   >
-                    Upgrade to Pro · $20/mo
+                    Create a free account
                   </Link>
-                )}
-              </div>
+                  <Link
+                    href="/login"
+                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-transparent px-3 text-xs font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-elevated)]"
+                  >
+                    Sign in
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 

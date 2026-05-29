@@ -17,9 +17,12 @@ export type ViewerPlan = {
 };
 
 const DEMO_COPILOT_COOKIE = "strata-copilot-demo-count";
+// Quotas are abuse-protection only — Strata is in early access, the product
+// is the focus, not the billing. The cap stops one bad actor draining our
+// Anthropic budget; it should never feel like a paywall to a real user.
 const LIMITS: Record<PlanTier, number> = {
-  demo: 3,
-  free: 5,
+  demo: 10,
+  free: 50,
   pro: Number.POSITIVE_INFINITY,
 };
 

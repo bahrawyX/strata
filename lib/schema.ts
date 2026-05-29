@@ -114,3 +114,24 @@ export const aiUsage = pgTable(
     pk: primaryKey({ columns: [t.userId, t.day] }),
   })
 );
+
+// Activity log — one row per user-initiated touch against a connection.
+// Used for the per-connection Activity page and as the audit trail an
+// engineering lead can hand to security review. Body intentionally small —
+// no SQL bodies are persisted by default, only the action type and a short
+// redacted summary on errors.
+export const activityLog = pgTable("activity_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  // userId is nullable so anonymous demo sessions can still log activity
+  // (correlation by connectionId only).
+  userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+  connectionId: uuid("connection_id"),
+  action: varchar("action", { length: 32 }).notNull(),
+  success: boolean("success").notNull(),
+  latencyMs: integer("latency_ms"),
+  // Optional short, redacted message — never raw pg paths or query bodies.
+  detail: varchar("detail", { length: 280 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type ActivityLog = typeof activityLog.$inferSelect;

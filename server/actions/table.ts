@@ -10,6 +10,8 @@ import {
   identifierSchema,
 } from "@/lib/validations";
 import { getDemoTableData, isDemoConnectionId } from "@/lib/demo-data";
+import { recordActivity } from "@/lib/activity";
+import { redactErrorMessage, summarizeForAuditLog } from "@/lib/redact";
 import { getOptionalSession, requireSession } from "./session";
 import { getConnectionRecordForUser } from "./connections";
 import { getTableColumns, type ColumnInfo } from "./schema";
@@ -173,15 +175,25 @@ export async function insertRow(input: {
       `INSERT INTO ${qualified} (${cols}) VALUES (${placeholders}) RETURNING *`,
       params
     );
+    await recordActivity({
+      userId: session.user.id,
+      connectionId,
+      action: "row.insert",
+      success: true,
+      detail: tableName,
+    });
     revalidatePath(`/db/${connectionId}/table/${tableName}`);
     return { data: { inserted: result.rows[0] as TableRow } };
   } catch (err) {
     console.error("insertRow failed", err);
-    const message =
-      err instanceof Error && err.message
-        ? sanitizePgError(err.message)
-        : "Insert failed.";
-    return { error: message };
+    await recordActivity({
+      userId: session.user.id,
+      connectionId,
+      action: "row.insert",
+      success: false,
+      detail: summarizeForAuditLog("insert", err),
+    });
+    return { error: redactErrorMessage(err) };
   } finally {
     if (client) {
       try {
@@ -263,15 +275,25 @@ export async function updateRow(input: {
     if (result.rows.length === 0) {
       return { error: "Row not found." };
     }
+    await recordActivity({
+      userId: session.user.id,
+      connectionId,
+      action: "row.update",
+      success: true,
+      detail: tableName,
+    });
     revalidatePath(`/db/${connectionId}/table/${tableName}`);
     return { data: { updated: result.rows[0] as TableRow } };
   } catch (err) {
     console.error("updateRow failed", err);
-    const message =
-      err instanceof Error && err.message
-        ? sanitizePgError(err.message)
-        : "Update failed.";
-    return { error: message };
+    await recordActivity({
+      userId: session.user.id,
+      connectionId,
+      action: "row.update",
+      success: false,
+      detail: summarizeForAuditLog("update", err),
+    });
+    return { error: redactErrorMessage(err) };
   } finally {
     if (client) {
       try {
@@ -341,15 +363,25 @@ export async function deleteRow(input: {
     if (result.rows.length === 0) {
       return { error: "Row not found." };
     }
+    await recordActivity({
+      userId: session.user.id,
+      connectionId,
+      action: "row.delete",
+      success: true,
+      detail: tableName,
+    });
     revalidatePath(`/db/${connectionId}/table/${tableName}`);
     return { data: { deleted: result.rows[0] as TableRow } };
   } catch (err) {
     console.error("deleteRow failed", err);
-    const message =
-      err instanceof Error && err.message
-        ? sanitizePgError(err.message)
-        : "Delete failed.";
-    return { error: message };
+    await recordActivity({
+      userId: session.user.id,
+      connectionId,
+      action: "row.delete",
+      success: false,
+      detail: summarizeForAuditLog("delete", err),
+    });
+    return { error: redactErrorMessage(err) };
   } finally {
     if (client) {
       try {
@@ -361,10 +393,3 @@ export async function deleteRow(input: {
   }
 }
 
-function sanitizePgError(message: string): string {
-  return message
-    .replace(/at\s+[\w./\\:-]+:\d+(?::\d+)?/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 240);
-}

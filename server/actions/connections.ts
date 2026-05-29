@@ -8,6 +8,8 @@ import { encrypt } from "@/lib/crypto";
 import { getClient, testConnectionString } from "@/lib/user-db";
 import { newConnectionSchema } from "@/lib/validations";
 import { DEMO_CONNECTION, isDemoConnectionId } from "@/lib/demo-data";
+import { recordActivity } from "@/lib/activity";
+import { summarizeForAuditLog } from "@/lib/redact";
 import { getOptionalSession, requireSession } from "./session";
 
 export type ActionResult<T> = { data: T } | { error: string };
@@ -165,7 +167,14 @@ export async function testConnection(
   id: string
 ): Promise<ActionResult<{ latencyMs: number }>> {
   if (isDemoConnectionId(id)) {
-    // Pretend a fast round-trip — keeps the UI honest about latency UX.
+    await recordActivity({
+      userId: null,
+      connectionId: id,
+      action: "connect.test",
+      success: true,
+      latencyMs: 18,
+      detail: "demo",
+    });
     return { data: { latencyMs: 18 } };
   }
   let session;
@@ -194,10 +203,25 @@ export async function testConnection(
       .update(connections)
       .set({ lastConnectedAt: new Date(), updatedAt: new Date() })
       .where(eq(connections.id, id));
+    await recordActivity({
+      userId: session.user.id,
+      connectionId: id,
+      action: "connect.test",
+      success: true,
+      latencyMs,
+    });
     revalidatePath("/connections");
     return { data: { latencyMs } };
   } catch (err) {
     console.error("testConnection failed", err);
+    await recordActivity({
+      userId: session.user.id,
+      connectionId: id,
+      action: "connect.test",
+      success: false,
+      latencyMs: Date.now() - startedAt,
+      detail: summarizeForAuditLog("connect", err),
+    });
     return {
       error:
         "Could not connect to the database. Please verify the connection string.",

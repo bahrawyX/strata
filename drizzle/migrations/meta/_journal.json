@@ -15,6 +15,13 @@
       "when": 1780019045846,
       "tag": "0001_spooky_chamber",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780024480700,
+      "tag": "0002_lonely_mathemanic",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowLeft,
+  Clock,
   GitBranch,
   LayoutDashboard,
   Table2,
@@ -62,6 +63,13 @@ export function SchemaTree({
           active={pathname === `/db/${connectionId}/schema`}
         >
           Schema
+        </NavItem>
+        <NavItem
+          href={`/db/${connectionId}/activity`}
+          icon={<Clock className="h-3.5 w-3.5" />}
+          active={pathname === `/db/${connectionId}/activity`}
+        >
+          Activity
         </NavItem>
       </nav>
 
