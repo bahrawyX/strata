@@ -2,17 +2,17 @@
 
 import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Info, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { authClient } from "@/lib/auth-client";
 import { loginSchema } from "@/lib/validations";
-import { signInDemo } from "@/server/actions/demo-auth";
 
 /**
- * Demo sign-in form. Any email + password that pass validation are accepted.
- * On success the server action sets a cookie and we route to /connections.
- * Real account persistence (BetterAuth) will be wired in a future change.
+ * Real sign-in via BetterAuth. The previous demo-cookie path lives separately
+ * on the auth pages as an explicit "Try the demo" CTA so users understand
+ * which surface they're using.
  */
 export function LoginForm() {
   const router = useRouter();
@@ -49,16 +49,24 @@ export function LoginForm() {
       return;
     }
     startTransition(async () => {
-      const res = await signInDemo({
-        email: result.data.email,
-        password: result.data.password,
-      });
-      if (!res.ok) {
-        setFormError(res.error);
-        return;
+      try {
+        const { error } = await authClient.signIn.email({
+          email: result.data.email,
+          password: result.data.password,
+        });
+        if (error) {
+          setFormError(mapAuthError(error));
+          return;
+        }
+        router.push("/connections");
+        router.refresh();
+      } catch {
+        // Network / DB-unreachable case — surfaces while the production
+        // DATABASE_URL is still a placeholder. Demo browsing still works.
+        setFormError(
+          "Sign-in is temporarily unavailable. Try the demo below, or contact support."
+        );
       }
-      router.push("/connections");
-      router.refresh();
     });
   }
 
@@ -114,14 +122,6 @@ export function LoginForm() {
         )}
       </div>
 
-      <div className="flex items-start gap-2 rounded-md border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-2.5 text-xs text-[var(--text-secondary)]">
-        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
-        <span>
-          Demo mode — any email and password that pass validation will sign
-          you in. The dashboard shows canned data.
-        </span>
-      </div>
-
       {formError && (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {formError}
@@ -140,4 +140,32 @@ export function LoginForm() {
       </Button>
     </form>
   );
+}
+
+/**
+ * Map BetterAuth's error envelope to a user-facing string. The library
+ * doesn't expose a stable error-code enum, so we look at the message text
+ * for the well-known cases and fall back to a generic message otherwise.
+ */
+function mapAuthError(error: { message?: string; code?: string }): string {
+  const m = (error.message ?? "").toLowerCase();
+  const c = (error.code ?? "").toLowerCase();
+  if (
+    m.includes("invalid email") ||
+    m.includes("invalid password") ||
+    m.includes("invalid credentials") ||
+    c.includes("invalid")
+  ) {
+    return "Invalid email or password.";
+  }
+  if (m.includes("not found") || m.includes("does not exist")) {
+    return "No account with that email. Create one below.";
+  }
+  if (m.includes("verify") || m.includes("verification")) {
+    return "Please verify your email before signing in.";
+  }
+  if (m.includes("rate") || m.includes("too many")) {
+    return "Too many attempts. Try again in a minute.";
+  }
+  return "Could not sign in. Please try again.";
 }

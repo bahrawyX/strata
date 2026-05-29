@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { DemoShortcut } from "@/components/auth/DemoShortcut";
 
 export const metadata = {
   title: "Sign in — Strata",
@@ -24,6 +25,7 @@ export default function LoginPage() {
           Create an account
         </Link>
       </p>
+      <DemoShortcut />
     </div>
   );
 }

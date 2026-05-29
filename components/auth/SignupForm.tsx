@@ -2,16 +2,16 @@
 
 import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Info, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { authClient } from "@/lib/auth-client";
 import { signupSchema } from "@/lib/validations";
-import { signUpDemo } from "@/server/actions/demo-auth";
 
 /**
- * Demo signup form. Validation gates the submit; on success the demo session
- * cookie is set and we route to /connections. No real account is persisted.
+ * Real signup via BetterAuth. Creates a real user row and signs them in.
+ * Demo path lives separately on the auth pages as an explicit CTA.
  */
 export function SignupForm() {
   const router = useRouter();
@@ -51,17 +51,23 @@ export function SignupForm() {
       return;
     }
     startTransition(async () => {
-      const res = await signUpDemo({
-        name: result.data.name,
-        email: result.data.email,
-        password: result.data.password,
-      });
-      if (!res.ok) {
-        setFormError(res.error);
-        return;
+      try {
+        const { error } = await authClient.signUp.email({
+          name: result.data.name,
+          email: result.data.email,
+          password: result.data.password,
+        });
+        if (error) {
+          setFormError(mapAuthError(error));
+          return;
+        }
+        router.push("/connections");
+        router.refresh();
+      } catch {
+        setFormError(
+          "Sign-up is temporarily unavailable. Try the demo below, or contact support."
+        );
       }
-      router.push("/connections");
-      router.refresh();
     });
   }
 
@@ -138,14 +144,6 @@ export function SignupForm() {
         )}
       </div>
 
-      <div className="flex items-start gap-2 rounded-md border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-2.5 text-xs text-[var(--text-secondary)]">
-        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
-        <span>
-          Demo mode — your account isn&apos;t saved yet. You&apos;ll land on
-          the dashboard with canned data.
-        </span>
-      </div>
-
       {formError && (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {formError}
@@ -164,4 +162,23 @@ export function SignupForm() {
       </Button>
     </form>
   );
+}
+
+function mapAuthError(error: { message?: string; code?: string }): string {
+  const m = (error.message ?? "").toLowerCase();
+  const c = (error.code ?? "").toLowerCase();
+  if (
+    m.includes("already") ||
+    m.includes("exists") ||
+    c.includes("user_already_exists")
+  ) {
+    return "An account with that email already exists. Sign in instead.";
+  }
+  if (m.includes("password")) {
+    return "Password doesn't meet requirements — use at least 8 characters.";
+  }
+  if (m.includes("rate") || m.includes("too many")) {
+    return "Too many attempts. Try again in a minute.";
+  }
+  return "Could not create your account. Please try again.";
 }
