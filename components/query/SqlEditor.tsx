@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useTransition, type KeyboardEvent } from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
 import { AlertCircle, Loader2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { executeQuery, type QueryResult } from "@/server/actions/query";
 import { formatCellValue } from "@/components/table/cell-utils";
 import { CopilotPanel } from "./CopilotPanel";
+import { CodeMirrorSqlEditor } from "./CodeMirrorSqlEditor";
 
 export function SqlEditor({ connectionId }: { connectionId: string }) {
   const [query, setQuery] = useState("");
@@ -15,11 +15,19 @@ export function SqlEditor({ connectionId }: { connectionId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [running, startTransition] = useTransition();
 
-  function runQuery() {
-    if (!query.trim() || running) return;
+  // Hold the latest query in a ref so the editor's onRun (which captures the
+  // closure at mount) sees the up-to-date value when Ctrl/Cmd+Enter fires.
+  const queryRef = useRef(query);
+  queryRef.current = query;
+  const runningRef = useRef(running);
+  runningRef.current = running;
+
+  const runQuery = useCallback(() => {
+    const q = queryRef.current;
+    if (!q.trim() || runningRef.current) return;
     setError(null);
     startTransition(async () => {
-      const res = await executeQuery({ connectionId, query });
+      const res = await executeQuery({ connectionId, query: q });
       if ("error" in res) {
         setError(res.error);
         setResult(null);
@@ -27,14 +35,7 @@ export function SqlEditor({ connectionId }: { connectionId: string }) {
       }
       setResult(res.data);
     });
-  }
-
-  function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-      e.preventDefault();
-      runQuery();
-    }
-  }
+  }, [connectionId]);
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -62,14 +63,11 @@ export function SqlEditor({ connectionId }: { connectionId: string }) {
       />
 
       <div className="p-6 border-b border-border">
-        <Textarea
+        <CodeMirrorSqlEditor
+          connectionId={connectionId}
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder="-- Write your SQL here..."
-          rows={8}
-          spellCheck={false}
-          className="font-mono text-xs min-h-[200px] resize-y"
+          onChange={setQuery}
+          onRun={runQuery}
           disabled={running}
         />
         <div className="mt-3 flex items-center gap-3">

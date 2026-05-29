@@ -241,6 +241,69 @@ export async function getDbStats(
   }
 }
 
+export type AutocompleteSchema = {
+  tables: Array<{ name: string; columns: string[] }>;
+};
+
+/**
+ * Compact schema payload for the SQL editor's autocomplete — just table names
+ * and column names, no types or constraints. Public schema only. Always
+ * resolves to a value, never an error — the editor falls back to keyword-only
+ * completion when the schema can't be read, which is fine.
+ */
+export async function getSchemaForAutocomplete(
+  connectionId: string
+): Promise<AutocompleteSchema> {
+  if (isDemoConnectionId(connectionId)) {
+    return {
+      tables: DEMO_SCHEMA_DIAGRAM.map((t) => ({
+        name: t.name,
+        columns: t.columns.map((c) => c.name),
+      })),
+    };
+  }
+  const session = await getOptionalSession().catch(() => null);
+  if (!session) return { tables: [] };
+  const record = await getConnectionRecordForUser(
+    connectionId,
+    session.user.id
+  );
+  if (!record) return { tables: [] };
+
+  let client;
+  try {
+    client = await getClient(record.encryptedConnectionString);
+    const result = await client.query<{ table_name: string; column_name: string }>(
+      `SELECT table_name, column_name
+       FROM information_schema.columns
+       WHERE table_schema = 'public'
+       ORDER BY table_name, ordinal_position`
+    );
+    const map = new Map<string, string[]>();
+    for (const r of result.rows) {
+      if (!map.has(r.table_name)) map.set(r.table_name, []);
+      map.get(r.table_name)!.push(r.column_name);
+    }
+    return {
+      tables: Array.from(map.entries()).map(([name, columns]) => ({
+        name,
+        columns,
+      })),
+    };
+  } catch (err) {
+    console.error("getSchemaForAutocomplete failed", err);
+    return { tables: [] };
+  } finally {
+    if (client) {
+      try {
+        await client.end();
+      } catch {
+        // ignore
+      }
+    }
+  }
+}
+
 /**
  * Assemble the full schema (tables, columns, primary keys, foreign keys) into
  * the shape the bahrawy `<Schema />` component expects, with an auto-layout
