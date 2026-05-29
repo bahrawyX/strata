@@ -1,0 +1,1 @@
+ALTER TABLE "activity_log" ADD COLUMN "query_preview" varchar(280);

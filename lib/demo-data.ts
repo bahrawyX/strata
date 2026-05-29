@@ -375,7 +375,8 @@ export type DemoSavedQuery = {
   updatedAt: Date;
 };
 
-const SAVED_BASE = "deadbeef-feed-4cab-baba-1234567890";
+const SAVED_BASE   = "deadbeef-feed-4cab-baba-1234567890";
+const HISTORY_BASE = "feedface-c0de-4a55-8b9e-0011223344";
 
 export const DEMO_SAVED_QUERIES: DemoSavedQuery[] = [
   {
@@ -437,6 +438,112 @@ export const DEMO_SAVED_QUERIES: DemoSavedQuery[] = [
     starred: false,
     createdAt: new Date("2025-05-23T22:18:00Z"),
     updatedAt: new Date("2025-05-23T22:18:00Z"),
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Canned query-execution history for the demo connection. Lets the History
+// tab feel populated even before the user runs anything. Each row matches
+// the HistoryRow shape (queryPreview + success + latencyMs + detail + ts).
+// ---------------------------------------------------------------------------
+
+export type DemoHistoryRow = {
+  id: string;
+  queryPreview: string;
+  success: boolean;
+  latencyMs: number | null;
+  detail: string | null;
+  createdAt: Date;
+};
+
+export const DEMO_QUERY_HISTORY: DemoHistoryRow[] = [
+  {
+    id: HISTORY_BASE + "01",
+    queryPreview:
+      "SELECT id, email, plan FROM users WHERE status = 'active' ORDER BY created_at DESC LIMIT 50;",
+    success: true,
+    latencyMs: 18,
+    detail: "SELECT",
+    createdAt: new Date("2025-05-25T17:42:00Z"),
+  },
+  {
+    id: HISTORY_BASE + "02",
+    queryPreview:
+      "UPDATE feature_flags SET rollout_pct = 50, updated_at = now() WHERE key = 'saml_sso';",
+    success: true,
+    latencyMs: 24,
+    detail: "UPDATE",
+    createdAt: new Date("2025-05-25T17:18:00Z"),
+  },
+  {
+    id: HISTORY_BASE + "03",
+    queryPreview:
+      "SELECT count(*) FROM events WHERE type = 'sql_run' AND ts > now() - interval '24 hours';",
+    success: true,
+    latencyMs: 42,
+    detail: "SELECT",
+    createdAt: new Date("2025-05-25T16:55:00Z"),
+  },
+  {
+    id: HISTORY_BASE + "04",
+    queryPreview: "DELET FROM ai_drafts WHERE accepted = false;",
+    success: false,
+    latencyMs: 8,
+    detail: "query: syntax",
+    createdAt: new Date("2025-05-25T16:30:00Z"),
+  },
+  {
+    id: HISTORY_BASE + "05",
+    queryPreview:
+      "SELECT metadata->>'source' AS source, count(*) FROM users GROUP BY 1;",
+    success: true,
+    latencyMs: 31,
+    detail: "SELECT",
+    createdAt: new Date("2025-05-25T15:48:00Z"),
+  },
+  {
+    id: HISTORY_BASE + "06",
+    queryPreview:
+      "INSERT INTO events (user_id, type, props) VALUES ('e7a1c8d2-3f4e-4a1b-8c2d-1f5e9a7b0001', 'page_view', '{\"path\":\"/connections\"}'::jsonb);",
+    success: true,
+    latencyMs: 11,
+    detail: "INSERT",
+    createdAt: new Date("2025-05-25T15:30:00Z"),
+  },
+  {
+    id: HISTORY_BASE + "07",
+    queryPreview:
+      "SELECT k.name, u.email FROM api_keys k JOIN users u ON u.id = k.user_id WHERE k.last_used_at < now() - interval '90 days';",
+    success: true,
+    latencyMs: 67,
+    detail: "SELECT",
+    createdAt: new Date("2025-05-25T14:20:00Z"),
+  },
+  {
+    id: HISTORY_BASE + "08",
+    queryPreview:
+      "SELECT * FROM orders WHERE total_cents > 50000 ORDER BY placed_at DESC;",
+    success: true,
+    latencyMs: 22,
+    detail: "SELECT",
+    createdAt: new Date("2025-05-25T13:48:00Z"),
+  },
+  {
+    id: HISTORY_BASE + "09",
+    queryPreview: "SELECT * FROM users WHERE id = 'not-a-uuid';",
+    success: false,
+    latencyMs: 6,
+    detail: "query: error",
+    createdAt: new Date("2025-05-25T13:00:00Z"),
+  },
+  {
+    id: HISTORY_BASE + "10",
+    queryPreview:
+      "SELECT date_trunc('day', placed_at) AS day, SUM(total_cents)/100.0 AS revenue FROM orders WHERE status = 'paid' GROUP BY 1 ORDER BY 1 DESC;",
+    success: true,
+    latencyMs: 89,
+    detail: "SELECT",
+    createdAt: new Date("2025-05-25T12:15:00Z"),
   },
 ];
 

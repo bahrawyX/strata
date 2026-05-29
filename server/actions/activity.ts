@@ -3,7 +3,10 @@
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { activityLog, type ActivityLog } from "@/lib/schema";
-import { isDemoConnectionId } from "@/lib/demo-data";
+import {
+  DEMO_QUERY_HISTORY,
+  isDemoConnectionId,
+} from "@/lib/demo-data";
 import { getOptionalSession } from "./session";
 import type { ActionResult } from "./connections";
 
@@ -128,6 +131,68 @@ function toRow(r: ActivityLog): ActivityRow {
     detail: r.detail,
     createdAt: r.createdAt,
   };
+}
+
+export type HistoryRow = {
+  id: string;
+  queryPreview: string;
+  success: boolean;
+  latencyMs: number | null;
+  detail: string | null;
+  createdAt: Date;
+};
+
+/**
+ * Read the user's recent query executions against this connection, newest
+ * first. Demo connections serve a static canned set so the history panel
+ * has something to show even before any queries are run. Rows missing a
+ * query_preview (legacy audit rows from before Step 10) are filtered out
+ * — there's nothing meaningful to load.
+ */
+export async function getQueryHistory(
+  connectionId: string,
+  limit = 100
+): Promise<ActionResult<HistoryRow[]>> {
+  const safeLimit = Math.max(1, Math.min(200, Math.floor(limit)));
+
+  if (isDemoConnectionId(connectionId)) {
+    return { data: DEMO_QUERY_HISTORY.slice(0, safeLimit) };
+  }
+
+  const session = await getOptionalSession().catch(() => null);
+  if (!session) {
+    return { error: "Sign in to view query history." };
+  }
+
+  try {
+    const rows = await db
+      .select()
+      .from(activityLog)
+      .where(
+        and(
+          eq(activityLog.connectionId, connectionId),
+          eq(activityLog.userId, session.user.id),
+          eq(activityLog.action, "query.execute")
+        )
+      )
+      .orderBy(desc(activityLog.createdAt))
+      .limit(safeLimit);
+
+    const filtered: HistoryRow[] = rows
+      .filter((r) => r.queryPreview !== null && r.queryPreview.length > 0)
+      .map((r) => ({
+        id: r.id,
+        queryPreview: r.queryPreview as string,
+        success: r.success,
+        latencyMs: r.latencyMs,
+        detail: r.detail,
+        createdAt: r.createdAt,
+      }));
+    return { data: filtered };
+  } catch (err) {
+    console.error("getQueryHistory failed", err);
+    return { error: "Could not load query history." };
+  }
 }
 
 /**

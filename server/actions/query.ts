@@ -36,6 +36,12 @@ export async function executeQuery(input: {
   }
   const { connectionId, query } = parsed.data;
 
+  // Build the redacted SQL preview once — same payload goes into both the
+  // success and failure activity-log rows. redactErrorMessage is the same
+  // helper used on error messages, which already strips paths + caps at
+  // 240 chars (well within the 280-char column).
+  const queryPreview = redactErrorMessage(query);
+
   if (isDemoConnectionId(connectionId)) {
     const result = getDemoQueryResult(query);
     const fakeLatency = Math.max(8, Math.round(Math.random() * 22) + 4);
@@ -46,6 +52,7 @@ export async function executeQuery(input: {
       success: true,
       latencyMs: fakeLatency,
       detail: "demo",
+      queryPreview,
     });
     return {
       data: {
@@ -81,6 +88,7 @@ export async function executeQuery(input: {
       success: true,
       latencyMs: executionTimeMs,
       detail: single.command ?? null,
+      queryPreview,
     });
     return {
       data: {
@@ -102,6 +110,7 @@ export async function executeQuery(input: {
       action: "query.execute",
       success: false,
       detail: summarizeForAuditLog("query", err),
+      queryPreview,
     });
     return { error: `Query failed: ${redactErrorMessage(err)}` };
   } finally {

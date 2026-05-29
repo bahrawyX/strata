@@ -131,6 +131,11 @@ export const activityLog = pgTable("activity_log", {
   latencyMs: integer("latency_ms"),
   // Optional short, redacted message — never raw pg paths or query bodies.
   detail: varchar("detail", { length: 280 }),
+  // For query.execute rows: a redacted preview of the SQL the user ran.
+  // First 280 chars after passing through redactErrorMessage(). Lets the
+  // History panel re-load past queries into the editor without persisting
+  // anything pg paths or stack frames could carry.
+  queryPreview: varchar("query_preview", { length: 280 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
