@@ -12,15 +12,21 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TableInfo } from "@/server/actions/schema";
+import type { ConnectionHealth as ConnectionHealthType } from "@/server/actions/activity";
+import { ConnectionHealth } from "./ConnectionHealth";
 
 export function SchemaTree({
   connectionId,
   connectionName,
   tables,
+  health,
+  isDemo,
 }: {
   connectionId: string;
   connectionName: string;
   tables: TableInfo[];
+  health: ConnectionHealthType;
+  isDemo: boolean;
 }) {
   const pathname = usePathname();
 
@@ -41,6 +47,12 @@ export function SchemaTree({
           {connectionName}
         </div>
       </div>
+
+      <ConnectionHealth
+        connectionId={connectionId}
+        isDemo={isDemo}
+        initialHealth={health}
+      />
 
       <nav className="p-2">
         <NavItem

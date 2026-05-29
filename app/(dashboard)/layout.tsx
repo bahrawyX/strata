@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar, type ViewerProp } from "@/components/layout/Topbar";
+import { DashboardToastHost } from "@/components/layout/DashboardToastHost";
 import { getViewer } from "@/lib/viewer";
 
 export default async function DashboardLayout({
@@ -16,14 +17,16 @@ export default async function DashboardLayout({
     : null;
 
   return (
-    <div className="flex flex-col h-screen">
-      <Topbar viewer={topbarViewer} />
-      <div className="flex flex-1 min-h-0">
-        <Sidebar />
-        <main className="flex-1 min-w-0 overflow-auto scrollbar-thin">
-          {children}
-        </main>
+    <DashboardToastHost>
+      <div className="flex flex-col h-screen">
+        <Topbar viewer={topbarViewer} />
+        <div className="flex flex-1 min-h-0">
+          <Sidebar />
+          <main className="flex-1 min-w-0 overflow-auto scrollbar-thin">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </DashboardToastHost>
   );
 }

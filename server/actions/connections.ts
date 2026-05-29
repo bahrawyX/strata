@@ -6,7 +6,10 @@ import { db } from "@/lib/db";
 import { connections } from "@/lib/schema";
 import { encrypt } from "@/lib/crypto";
 import { getClient, testConnectionString } from "@/lib/user-db";
-import { newConnectionSchema } from "@/lib/validations";
+import {
+  newConnectionSchema,
+  rotateConnectionStringSchema,
+} from "@/lib/validations";
 import { DEMO_CONNECTION, isDemoConnectionId } from "@/lib/demo-data";
 import { recordActivity } from "@/lib/activity";
 import { summarizeForAuditLog } from "@/lib/redact";
@@ -214,18 +217,29 @@ export async function testConnection(
     return { data: { latencyMs } };
   } catch (err) {
     console.error("testConnection failed", err);
+    const bucket = summarizeForAuditLog("connect", err);
     await recordActivity({
       userId: session.user.id,
       connectionId: id,
       action: "connect.test",
       success: false,
       latencyMs: Date.now() - startedAt,
-      detail: summarizeForAuditLog("connect", err),
+      detail: bucket,
     });
-    return {
-      error:
-        "Could not connect to the database. Please verify the connection string.",
+    // Map the audit bucket to a user-facing reason. Stays terse and never
+    // includes the raw error body.
+    const REASONS: Record<string, string> = {
+      "connect: timeout": "Connection timed out.",
+      "connect: dns": "Host not found (DNS failure).",
+      "connect: refused": "Connection refused.",
+      "connect: tls": "TLS / certificate error.",
+      "connect: auth": "Authentication failed.",
+      "connect: permission": "Permission denied by the database.",
     };
+    const reason =
+      (bucket && REASONS[bucket]) ??
+      "Could not connect to the database. Please verify the connection string.";
+    return { error: reason };
   } finally {
     if (client) {
       try {
@@ -234,6 +248,85 @@ export async function testConnection(
         // ignore
       }
     }
+  }
+}
+
+/**
+ * Replace the encrypted connection string on an existing connection. Tests
+ * the new string before persisting so a busted string never overwrites a
+ * working one. Always records the rotation attempt in the audit log,
+ * success or failure.
+ */
+export async function rotateConnectionString(input: {
+  connectionId: string;
+  newConnectionString: string;
+}): Promise<ActionResult<{ id: string }>> {
+  if (isDemoConnectionId(input.connectionId)) {
+    return { error: "The demo connection can't be rotated." };
+  }
+
+  const parsed = rotateConnectionStringSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  let session;
+  try {
+    session = await requireSession();
+  } catch {
+    return { error: "Sign in to rotate connections." };
+  }
+
+  // Existence + ownership check up-front so an unauthorized id can't even
+  // probe the new connection string.
+  const record = await getConnectionRecordForUser(
+    parsed.data.connectionId,
+    session.user.id
+  );
+  if (!record) return { error: "Connection not found." };
+
+  const test = await testConnectionString(parsed.data.newConnectionString);
+  if (!test.ok) {
+    await recordActivity({
+      userId: session.user.id,
+      connectionId: parsed.data.connectionId,
+      action: "connect.test",
+      success: false,
+      detail: "rotate: rejected",
+    });
+    return { error: test.error };
+  }
+
+  try {
+    const encrypted = encrypt(parsed.data.newConnectionString);
+    await db
+      .update(connections)
+      .set({
+        encryptedConnectionString: encrypted,
+        lastConnectedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(connections.id, parsed.data.connectionId));
+    await recordActivity({
+      userId: session.user.id,
+      connectionId: parsed.data.connectionId,
+      action: "connect.test",
+      success: true,
+      detail: "rotated",
+    });
+    revalidatePath("/connections");
+    revalidatePath(`/db/${parsed.data.connectionId}`);
+    return { data: { id: parsed.data.connectionId } };
+  } catch (err) {
+    console.error("rotateConnectionString failed", err);
+    await recordActivity({
+      userId: session.user.id,
+      connectionId: parsed.data.connectionId,
+      action: "connect.test",
+      success: false,
+      detail: summarizeForAuditLog("rotate", err),
+    });
+    return { error: "Could not save the new connection string." };
   }
 }
 

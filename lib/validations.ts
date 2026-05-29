@@ -62,6 +62,13 @@ export const newConnectionSchema = z.object({
 
 export type NewConnectionInput = z.infer<typeof newConnectionSchema>;
 
+export const rotateConnectionStringSchema = z.object({
+  connectionId: z.string().uuid("Invalid connection id."),
+  newConnectionString: connectionStringSchema,
+});
+
+export type RotateConnectionInput = z.infer<typeof rotateConnectionStringSchema>;
+
 export const sqlQuerySchema = z.object({
   connectionId: z.string().uuid("Invalid connection id."),
   query: z
