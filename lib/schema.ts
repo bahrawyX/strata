@@ -5,6 +5,8 @@ import {
   uuid,
   timestamp,
   boolean,
+  integer,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 // BetterAuth tables ------------------------------------------------------
@@ -74,3 +76,41 @@ export const connections = pgTable("connections", {
 
 export type Connection = typeof connections.$inferSelect;
 export type NewConnection = typeof connections.$inferInsert;
+
+// Billing tables ---------------------------------------------------------
+// One row per real user. The row exists once they've started a checkout
+// (or once a webhook fires). Absence = "free tier".
+export const subscription = pgTable("subscription", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  // 'free' until a webhook confirms a paid subscription, then 'pro'.
+  plan: varchar("plan", { length: 20 }).notNull().default("free"),
+  // Mirrors Stripe's `subscription.status` — active / canceled / past_due
+  // / trialing / unpaid / etc. We treat 'active' and 'trialing' as paid.
+  status: varchar("status", { length: 30 }),
+  currentPeriodEnd: timestamp("current_period_end"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type Subscription = typeof subscription.$inferSelect;
+
+// Daily AI co-pilot usage counter. Composite PK (userId, day) so the upsert
+// is atomic and we never count two requests as one.
+export const aiUsage = pgTable(
+  "ai_usage",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    day: varchar("day", { length: 10 }).notNull(), // YYYY-MM-DD (UTC)
+    count: integer("count").notNull().default(0),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.day] }),
+  })
+);

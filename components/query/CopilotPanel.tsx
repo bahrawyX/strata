@@ -8,6 +8,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
+import Link from "next/link";
 import {
   AlertCircle,
   ArrowRight,
@@ -15,12 +16,19 @@ import {
   Loader2,
   Sparkles,
   X,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { askSqlCopilot } from "@/server/actions/copilot";
-import type { CopilotResponse } from "@/lib/ai/copilot";
+import type { CopilotResponse, CopilotUsage } from "@/lib/ai/copilot";
 
 type Draft = CopilotResponse & { cached: boolean };
+
+type Upgrade = {
+  tier: "demo" | "free";
+  used: number;
+  limit: number;
+};
 
 type Props = {
   connectionId: string;
@@ -34,7 +42,9 @@ export function CopilotPanel({ connectionId, onInsert, onReplace }: Props) {
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [usage, setUsage] = useState<CopilotUsage | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [upgrade, setUpgrade] = useState<Upgrade | null>(null);
   const [submitting, startTransition] = useTransition();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -63,13 +73,16 @@ export function CopilotPanel({ connectionId, onInsert, onReplace }: Props) {
     e?.preventDefault();
     if (!question.trim() || submitting) return;
     setError(null);
+    setUpgrade(null);
     setDraft(null);
     startTransition(async () => {
       const res = await askSqlCopilot({ connectionId, question });
       if (res.ok) {
         setDraft({ ...res.data, cached: res.cached });
+        if (res.usage) setUsage(res.usage);
       } else {
         setError(res.error);
+        if (res.upgrade) setUpgrade(res.upgrade);
       }
     });
   }
@@ -98,13 +111,29 @@ export function CopilotPanel({ connectionId, onInsert, onReplace }: Props) {
         <span className="text-[var(--text-muted)]">
           — describe what you want; the co-pilot drafts the SQL.
         </span>
-        <span className="ml-auto inline-flex items-center gap-1 font-mono text-[10px] text-[var(--text-muted)]">
-          <kbd className="rounded border border-border bg-[var(--bg-surface)] px-1 py-0.5">
-            ⌘
-          </kbd>
-          <kbd className="rounded border border-border bg-[var(--bg-surface)] px-1 py-0.5">
-            K
-          </kbd>
+        <span className="ml-auto flex items-center gap-2">
+          {usage && usage.limit !== Number.POSITIVE_INFINITY && (
+            <span
+              className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-0.5 font-mono text-[10px] text-[var(--text-muted)]"
+              title={`${usage.tier} tier`}
+            >
+              {usage.used} / {usage.limit} today
+            </span>
+          )}
+          {usage?.tier === "pro" && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--accent)]/40 bg-[var(--accent-muted)] px-2 py-0.5 font-mono text-[10px] text-[var(--accent)]">
+              <Zap className="h-3 w-3" />
+              Pro
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1 font-mono text-[10px] text-[var(--text-muted)]">
+            <kbd className="rounded border border-border bg-[var(--bg-surface)] px-1 py-0.5">
+              ⌘
+            </kbd>
+            <kbd className="rounded border border-border bg-[var(--bg-surface)] px-1 py-0.5">
+              K
+            </kbd>
+          </span>
         </span>
       </button>
 
@@ -167,10 +196,55 @@ export function CopilotPanel({ connectionId, onInsert, onReplace }: Props) {
             to close. The co-pilot sees your full schema, not your data.
           </p>
 
-          {error && (
+          {error && !upgrade && (
             <div className="mt-3 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
               <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" />
               <span>{error}</span>
+            </div>
+          )}
+
+          {upgrade && (
+            <div className="mt-3 rounded-md border border-[var(--accent)]/40 bg-[var(--accent-muted)] p-4">
+              <div className="flex items-start gap-2">
+                <Zap className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-[var(--text-primary)]">
+                    {upgrade.tier === "demo"
+                      ? "You've used your 3 free drafts"
+                      : "Daily limit reached"}
+                  </p>
+                  <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
+                    {upgrade.tier === "demo"
+                      ? "Sign up to get 5 drafts per day on the free plan, or go Pro for unlimited."
+                      : "Free accounts get 5 drafts per day. Upgrade to Pro for unlimited."}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                {upgrade.tier === "demo" ? (
+                  <>
+                    <Link
+                      href="/signup"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--accent)] px-3 text-xs font-medium text-white transition-colors hover:bg-[var(--accent-hover)]"
+                    >
+                      Create a free account
+                    </Link>
+                    <Link
+                      href="/settings/billing"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-transparent px-3 text-xs font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-elevated)]"
+                    >
+                      See Pro
+                    </Link>
+                  </>
+                ) : (
+                  <Link
+                    href="/settings/billing"
+                    className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--accent)] px-3 text-xs font-medium text-white transition-colors hover:bg-[var(--accent-hover)]"
+                  >
+                    Upgrade to Pro · $20/mo
+                  </Link>
+                )}
+              </div>
             </div>
           )}
 

@@ -23,9 +23,31 @@ const CopilotResponseSchema = z.object({
 
 export type CopilotResponse = z.infer<typeof CopilotResponseSchema>;
 
+export type CopilotUsage = {
+  tier: "demo" | "free" | "pro";
+  used: number; // after this request, what's the count today
+  limit: number; // Infinity for pro
+};
+
 export type CopilotResult =
-  | { ok: true; data: CopilotResponse; cached: boolean }
-  | { ok: false; error: string; recoverable: boolean };
+  | {
+      ok: true;
+      data: CopilotResponse;
+      cached: boolean;
+      usage?: CopilotUsage;
+    }
+  | {
+      ok: false;
+      error: string;
+      recoverable: boolean;
+      /** Set when the failure is "you hit the daily cap" so the UI can
+       *  render an Upgrade CTA instead of a generic error. */
+      upgrade?: {
+        tier: "demo" | "free";
+        used: number;
+        limit: number;
+      };
+    };
 
 /**
  * Render the schema into a compact, deterministic text representation that
