@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { executeQuery, type QueryResult } from "@/server/actions/query";
 import { formatCellValue } from "@/components/table/cell-utils";
+import { CopilotPanel } from "./CopilotPanel";
 
 export function SqlEditor({ connectionId }: { connectionId: string }) {
   const [query, setQuery] = useState("");
@@ -51,6 +52,14 @@ export function SqlEditor({ connectionId }: { connectionId: string }) {
           to run. Queries time out after 30 seconds.
         </p>
       </div>
+
+      <CopilotPanel
+        connectionId={connectionId}
+        onInsert={(sql) =>
+          setQuery((prev) => (prev.trim() ? `${prev.trimEnd()}\n\n${sql}` : sql))
+        }
+        onReplace={(sql) => setQuery(sql)}
+      />
 
       <div className="p-6 border-b border-border">
         <Textarea
