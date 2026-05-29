@@ -1,0 +1,233 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import Link from "next/link";
+import { Check, Loader2, Pencil, Star, Trash2, X } from "lucide-react";
+import {
+  deleteSavedQuery,
+  toggleSavedQueryStar,
+  updateSavedQuery,
+  type SavedQueryRow,
+} from "@/server/actions/saved-queries";
+import { cn } from "@/lib/utils";
+import { relativeTime } from "@/lib/utils";
+
+type Props = {
+  connectionId: string;
+  initialRows: SavedQueryRow[];
+};
+
+export function SavedQueriesPanel({ connectionId, initialRows }: Props) {
+  const [rows, setRows] = useState<SavedQueryRow[]>(initialRows);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function applyRow(updated: SavedQueryRow) {
+    setRows((prev) =>
+      prev
+        .map((r) => (r.id === updated.id ? updated : r))
+        .sort((a, b) => {
+          if (a.starred !== b.starred) return a.starred ? -1 : 1;
+          return b.updatedAt.getTime() - a.updatedAt.getTime();
+        })
+    );
+  }
+
+  function startEdit(row: SavedQueryRow) {
+    setEditingId(row.id);
+    setEditName(row.name);
+    setError(null);
+  }
+
+  function commitEdit(id: string) {
+    const trimmed = editName.trim();
+    if (!trimmed) {
+      setError("Name can't be empty.");
+      return;
+    }
+    startTransition(async () => {
+      const res = await updateSavedQuery({ id, name: trimmed });
+      if ("error" in res) {
+        setError(res.error);
+        return;
+      }
+      applyRow(res.data);
+      setEditingId(null);
+    });
+  }
+
+  function toggleStar(id: string) {
+    startTransition(async () => {
+      const res = await toggleSavedQueryStar(id);
+      if ("error" in res) {
+        setError(res.error);
+        return;
+      }
+      applyRow(res.data);
+    });
+  }
+
+  function remove(id: string) {
+    if (!confirm("Delete this saved query? This cannot be undone.")) return;
+    startTransition(async () => {
+      const res = await deleteSavedQuery(id);
+      if ("error" in res) {
+        setError(res.error);
+        return;
+      }
+      setRows((prev) => prev.filter((r) => r.id !== id));
+    });
+  }
+
+  if (rows.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-border bg-card/40 p-8 text-center">
+        <p className="text-sm font-medium text-foreground">No saved queries</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Run a query in the editor, then click{" "}
+          <span className="font-mono text-foreground">Save</span> to keep it
+          handy.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {error && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {error}
+        </div>
+      )}
+
+      <ul className="overflow-hidden rounded-lg border border-border bg-card">
+        {rows.map((row, i) => {
+          const isEditing = editingId === row.id;
+          return (
+            <li
+              key={row.id}
+              className={cn(
+                "flex flex-col gap-2 px-4 py-3 text-sm",
+                i > 0 && "border-t border-border"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => toggleStar(row.id)}
+                  disabled={pending}
+                  className={cn(
+                    "rounded p-1 transition-colors",
+                    row.starred
+                      ? "text-amber-400 hover:bg-amber-400/10"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                  aria-label={row.starred ? "Unstar" : "Star"}
+                  title={row.starred ? "Unstar" : "Star"}
+                >
+                  <Star
+                    className="h-3.5 w-3.5"
+                    fill={row.starred ? "currentColor" : "none"}
+                  />
+                </button>
+
+                {isEditing ? (
+                  <input
+                    autoFocus
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") commitEdit(row.id);
+                      if (e.key === "Escape") setEditingId(null);
+                    }}
+                    disabled={pending}
+                    className="flex-1 rounded border border-border bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
+                  />
+                ) : (
+                  <Link
+                    href={`/db/${connectionId}/query?load=${encodeURIComponent(
+                      row.id
+                    )}`}
+                    className="flex-1 truncate font-medium text-foreground hover:underline"
+                    title={row.name}
+                  >
+                    {row.name}
+                  </Link>
+                )}
+
+                <div className="flex items-center gap-0.5">
+                  {isEditing ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => commitEdit(row.id)}
+                        disabled={pending}
+                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        aria-label="Save name"
+                      >
+                        {pending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Check className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        disabled={pending}
+                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        aria-label="Cancel"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(row)}
+                        disabled={pending}
+                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        aria-label="Rename"
+                        title="Rename"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(row.id)}
+                        disabled={pending}
+                        className="rounded p-1 text-muted-foreground hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)]"
+                        aria-label="Delete"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <pre className="max-h-20 overflow-hidden rounded border border-border bg-muted/30 p-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
+                {row.query.length > 320
+                  ? row.query.slice(0, 320) + "…"
+                  : row.query}
+              </pre>
+
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>Updated {relativeTime(row.updatedAt)}</span>
+                {row.connectionId === null && (
+                  <span className="rounded border border-border bg-muted px-1 py-px font-mono uppercase">
+                    Any connection
+                  </span>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}

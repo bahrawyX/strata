@@ -7,6 +7,7 @@ import {
   Clock,
   GitBranch,
   LayoutDashboard,
+  Star,
   Table2,
   Terminal,
 } from "lucide-react";
@@ -75,6 +76,13 @@ export function SchemaTree({
           active={pathname === `/db/${connectionId}/schema`}
         >
           Schema
+        </NavItem>
+        <NavItem
+          href={`/db/${connectionId}/queries`}
+          icon={<Star className="h-3.5 w-3.5" />}
+          active={pathname === `/db/${connectionId}/queries`}
+        >
+          Saved
         </NavItem>
         <NavItem
           href={`/db/${connectionId}/activity`}

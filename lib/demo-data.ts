@@ -359,6 +359,87 @@ export function isDemoConnectionId(id: string): boolean {
   return id === DEMO_CONNECTION_ID;
 }
 
+// ---------------------------------------------------------------------------
+// Canned saved queries for the demo connection. Returned to anonymous
+// visitors so the SavedQueriesPanel isn't an empty list on first arrival;
+// real users get their own rows from saved_queries.
+// ---------------------------------------------------------------------------
+
+export type DemoSavedQuery = {
+  id: string;
+  connectionId: string;
+  name: string;
+  query: string;
+  starred: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+const SAVED_BASE = "deadbeef-feed-4cab-baba-1234567890";
+
+export const DEMO_SAVED_QUERIES: DemoSavedQuery[] = [
+  {
+    id: SAVED_BASE + "01",
+    connectionId: DEMO_CONNECTION_ID,
+    name: "Active users · last 30 days",
+    query:
+      "SELECT id, email, plan, created_at\nFROM users\nWHERE status = 'active'\n  AND created_at > now() - interval '30 days'\nORDER BY created_at DESC;",
+    starred: true,
+    createdAt: new Date("2025-05-10T09:00:00Z"),
+    updatedAt: new Date("2025-05-10T09:00:00Z"),
+  },
+  {
+    id: SAVED_BASE + "02",
+    connectionId: DEMO_CONNECTION_ID,
+    name: "Revenue by currency · monthly",
+    query:
+      "SELECT date_trunc('month', placed_at) AS month,\n       currency,\n       SUM(total_cents) / 100.0 AS revenue\nFROM orders\nWHERE status = 'paid'\nGROUP BY 1, 2\nORDER BY 1 DESC, 2 ASC;",
+    starred: true,
+    createdAt: new Date("2025-05-12T14:30:00Z"),
+    updatedAt: new Date("2025-05-12T14:30:00Z"),
+  },
+  {
+    id: SAVED_BASE + "03",
+    connectionId: DEMO_CONNECTION_ID,
+    name: "Stale API keys (90+ days)",
+    query:
+      "SELECT k.name, u.email, k.last_used_at\nFROM api_keys k\nJOIN users u ON u.id = k.user_id\nWHERE k.last_used_at IS NULL\n   OR k.last_used_at < now() - interval '90 days'\nORDER BY k.created_at;",
+    starred: false,
+    createdAt: new Date("2025-05-15T11:00:00Z"),
+    updatedAt: new Date("2025-05-15T11:00:00Z"),
+  },
+  {
+    id: SAVED_BASE + "04",
+    connectionId: DEMO_CONNECTION_ID,
+    name: "Feature flags · production rollout",
+    query:
+      "SELECT key, rollout_pct, environments, updated_at\nFROM feature_flags\nWHERE 'production' = ANY(environments)\nORDER BY rollout_pct DESC, key;",
+    starred: false,
+    createdAt: new Date("2025-05-18T08:15:00Z"),
+    updatedAt: new Date("2025-05-22T07:30:00Z"),
+  },
+  {
+    id: SAVED_BASE + "05",
+    connectionId: DEMO_CONNECTION_ID,
+    name: "Co-pilot draft acceptance rate",
+    query:
+      "SELECT date_trunc('day', created_at) AS day,\n       count(*) FILTER (WHERE accepted) * 100.0 / count(*) AS accept_pct,\n       count(*) AS drafts\nFROM ai_drafts\nWHERE created_at > now() - interval '14 days'\nGROUP BY 1\nORDER BY 1 DESC;",
+    starred: false,
+    createdAt: new Date("2025-05-20T16:45:00Z"),
+    updatedAt: new Date("2025-05-20T16:45:00Z"),
+  },
+  {
+    id: SAVED_BASE + "06",
+    connectionId: DEMO_CONNECTION_ID,
+    name: "Users by source (jsonb)",
+    query:
+      "SELECT metadata->>'source' AS source, count(*) AS n\nFROM users\nWHERE metadata ? 'source'\nGROUP BY 1\nORDER BY n DESC;",
+    starred: false,
+    createdAt: new Date("2025-05-23T22:18:00Z"),
+    updatedAt: new Date("2025-05-23T22:18:00Z"),
+  },
+];
+
 /**
  * Demo schema diagram — auto-laid-out grid (4 columns × N rows) with
  * realistic foreign-key relationships connecting orders/sessions/invoices/

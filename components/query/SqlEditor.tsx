@@ -1,19 +1,27 @@
 "use client";
 
 import { useCallback, useRef, useState, useTransition } from "react";
-import { AlertCircle, Loader2, Play } from "lucide-react";
+import { AlertCircle, Loader2, Play, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { executeQuery, type QueryResult } from "@/server/actions/query";
 import { formatCellValue } from "@/components/table/cell-utils";
 import { CopilotPanel } from "./CopilotPanel";
 import { CodeMirrorSqlEditor } from "./CodeMirrorSqlEditor";
+import { SaveQueryDialog } from "./SaveQueryDialog";
 
-export function SqlEditor({ connectionId }: { connectionId: string }) {
-  const [query, setQuery] = useState("");
+export function SqlEditor({
+  connectionId,
+  initialQuery,
+}: {
+  connectionId: string;
+  initialQuery?: string;
+}) {
+  const [query, setQuery] = useState(initialQuery ?? "");
   const [result, setResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, startTransition] = useTransition();
+  const [saveOpen, setSaveOpen] = useState(false);
 
   // Hold the latest query in a ref so the editor's onRun (which captures the
   // closure at mount) sees the up-to-date value when Ctrl/Cmd+Enter fires.
@@ -84,6 +92,16 @@ export function SqlEditor({ connectionId }: { connectionId: string }) {
               </>
             )}
           </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setSaveOpen(true)}
+            disabled={!query.trim() || running}
+            title="Save this query to the sidebar"
+          >
+            <Save className="h-3.5 w-3.5" />
+            Save
+          </Button>
           {result && (
             <span className="text-xs text-muted-foreground">
               {result.rowCount} row{result.rowCount === 1 ? "" : "s"}{" "}
@@ -93,6 +111,13 @@ export function SqlEditor({ connectionId }: { connectionId: string }) {
           )}
         </div>
       </div>
+
+      <SaveQueryDialog
+        open={saveOpen}
+        onOpenChange={setSaveOpen}
+        connectionId={connectionId}
+        query={query}
+      />
 
       <div className="flex-1 min-h-0 overflow-auto scrollbar-thin">
         {error && (

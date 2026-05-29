@@ -135,3 +135,24 @@ export const activityLog = pgTable("activity_log", {
 });
 
 export type ActivityLog = typeof activityLog.$inferSelect;
+
+// Saved queries — one row per query a user has explicitly saved.
+// connectionId is nullable so a query can be cross-connection ("works on
+// any DB with a users table"). starred queries float to the top of the
+// list. Body is plain text — no encryption since queries are not secrets
+// in the same way connection strings are; if the user puts secrets in
+// the query string, that's already a problem we can't fully prevent.
+export const savedQueries = pgTable("saved_queries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  connectionId: uuid("connection_id"),
+  name: varchar("name", { length: 120 }).notNull(),
+  query: text("query").notNull(),
+  starred: boolean("starred").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type SavedQuery = typeof savedQueries.$inferSelect;

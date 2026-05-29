@@ -69,6 +69,32 @@ export const rotateConnectionStringSchema = z.object({
 
 export type RotateConnectionInput = z.infer<typeof rotateConnectionStringSchema>;
 
+export const savedQueryNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Give the query a name.")
+  .max(120, "Name is too long (max 120 characters).");
+
+export const savedQueryBodySchema = z
+  .string()
+  .min(1, "Query cannot be empty.")
+  .max(10_000, "Query is too long.");
+
+export const saveQuerySchema = z.object({
+  connectionId: z.string().uuid().nullable(),
+  name: savedQueryNameSchema,
+  query: savedQueryBodySchema,
+});
+
+export const updateSavedQuerySchema = z.object({
+  id: z.string().uuid(),
+  name: savedQueryNameSchema.optional(),
+  query: savedQueryBodySchema.optional(),
+});
+
+export type SaveQueryInput = z.infer<typeof saveQuerySchema>;
+export type UpdateSavedQueryInput = z.infer<typeof updateSavedQuerySchema>;
+
 export const sqlQuerySchema = z.object({
   connectionId: z.string().uuid("Invalid connection id."),
   query: z
