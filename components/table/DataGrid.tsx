@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatCellValue } from "./cell-utils";
 import { RowEditor } from "./RowEditor";
+import { ExportButton } from "@/components/query/ExportButton";
 import type {
   TableDataResult,
   TableRow,
@@ -107,14 +108,23 @@ export function DataGrid({
             )}
           </p>
         </div>
-        <Button
-          size="sm"
-          onClick={() => setEditor({ kind: "insert" })}
-          disabled={!data.primaryKey && data.columns.length === 0}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Insert row
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportButton
+            source={{
+              kind: "table",
+              connectionId,
+              tableName,
+            }}
+          />
+          <Button
+            size="sm"
+            onClick={() => setEditor({ kind: "insert" })}
+            disabled={!data.primaryKey && data.columns.length === 0}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Insert row
+          </Button>
+        </div>
       </div>
 
       {error && (

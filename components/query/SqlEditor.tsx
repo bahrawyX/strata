@@ -9,6 +9,7 @@ import { formatCellValue } from "@/components/table/cell-utils";
 import { CopilotPanel } from "./CopilotPanel";
 import { CodeMirrorSqlEditor } from "./CodeMirrorSqlEditor";
 import { SaveQueryDialog } from "./SaveQueryDialog";
+import { ExportButton } from "./ExportButton";
 
 export function SqlEditor({
   connectionId,
@@ -108,6 +109,18 @@ export function SqlEditor({
               {result.command ? `· ${result.command}` : ""} ·{" "}
               {result.executionTimeMs}ms
             </span>
+          )}
+          {result && result.fields.length > 0 && result.rows.length > 0 && (
+            <div className="ml-auto">
+              <ExportButton
+                source={{
+                  kind: "local",
+                  baseName: "query-result",
+                  fields: result.fields.map((f) => ({ name: f.name })),
+                  rows: result.rows,
+                }}
+              />
+            </div>
           )}
         </div>
       </div>
