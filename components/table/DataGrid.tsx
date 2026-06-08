@@ -16,6 +16,7 @@ import { AnimatePresence } from "motion/react";
 import { formatCellValue } from "./cell-utils";
 import { RowEditor } from "./RowEditor";
 import { ExportButton } from "@/components/query/ExportButton";
+import { UndoToast, type PendingUndo } from "./UndoToast";
 import type {
   TableDataResult,
   TableRow,
@@ -44,6 +45,7 @@ export function DataGrid({
   const [confirmingRow, setConfirmingRow] = useState<number | null>(null);
   const [deleting, startDeleting] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [pendingUndo, setPendingUndo] = useState<PendingUndo | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
@@ -75,6 +77,14 @@ export function DataGrid({
         return;
       }
       setConfirmingRow(null);
+      if (result.data.undo) {
+        setPendingUndo({
+          id: result.data.undo.id,
+          tableName: result.data.undo.tableName,
+          operation: result.data.undo.operation,
+          expiresAt: result.data.undo.expiresAt,
+        });
+      }
       router.refresh();
     });
   }
@@ -83,8 +93,9 @@ export function DataGrid({
     setEditor(null);
   }
 
-  function onEditorSuccess() {
+  function onEditorSuccess(undo?: PendingUndo | null) {
     setEditor(null);
+    if (undo) setPendingUndo(undo);
     router.refresh();
   }
 
@@ -261,6 +272,11 @@ export function DataGrid({
           />
         )}
       </AnimatePresence>
+
+      <UndoToast
+        undo={pendingUndo}
+        onDismiss={() => setPendingUndo(null)}
+      />
     </div>
   );
 }

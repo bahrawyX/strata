@@ -43,6 +43,13 @@
       "when": 1780064166027,
       "tag": "0005_premium_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780933175528,
+      "tag": "0006_spooky_johnny_storm",
+      "breakpoints": true
     }
   ]
 }

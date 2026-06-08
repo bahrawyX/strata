@@ -13,6 +13,7 @@ import { getDemoTableData, isDemoConnectionId } from "@/lib/demo-data";
 import { recordActivity } from "@/lib/activity";
 import { redactErrorMessage, summarizeForAuditLog } from "@/lib/redact";
 import { READ_ONLY_REFUSAL } from "@/lib/write-guard";
+import { recordUndo, type UndoSummary } from "./undo";
 import { getOptionalSession, requireSession } from "./session";
 import { getConnectionRecordForUser } from "./connections";
 import { getTableColumns, type ColumnInfo } from "./schema";
@@ -214,7 +215,7 @@ export async function updateRow(input: {
   primaryKeyColumn: string;
   primaryKeyValue: unknown;
   values: Record<string, unknown>;
-}): Promise<ActionResult<{ updated: TableRow }>> {
+}): Promise<ActionResult<{ updated: TableRow; undo?: UndoSummary | null }>> {
   const parsed = updateRowSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -269,6 +270,22 @@ export async function updateRow(input: {
   let client;
   try {
     client = await getClient(record.encryptedConnectionString);
+    // Read the row first so we can persist its current state as the undo
+    // payload. If this read fails we still proceed with the write — undo
+    // is a nice-to-have, not a precondition for the user's edit.
+    let previousRow: TableRow | null = null;
+    try {
+      const prev = await client.query(
+        `SELECT * FROM ${qualified} WHERE ${quoteIdent(
+          primaryKeyColumn
+        )} = $1 LIMIT 1`,
+        [primaryKeyValue]
+      );
+      previousRow = (prev.rows[0] as TableRow) ?? null;
+    } catch {
+      previousRow = null;
+    }
+
     const result = await client.query(
       `UPDATE ${qualified} SET ${setClause} WHERE ${quoteIdent(
         primaryKeyColumn
@@ -286,7 +303,21 @@ export async function updateRow(input: {
       detail: tableName,
     });
     revalidatePath(`/db/${connectionId}/table/${tableName}`);
-    return { data: { updated: result.rows[0] as TableRow } };
+
+    // Persist undo iff we successfully captured the previous state.
+    let undo: UndoSummary | null = null;
+    if (previousRow) {
+      undo = await recordUndo({
+        connectionId,
+        schema,
+        tableName,
+        primaryKeyColumn,
+        primaryKeyValue,
+        operation: "update",
+        previousValues: previousRow,
+      });
+    }
+    return { data: { updated: result.rows[0] as TableRow, undo } };
   } catch (err) {
     console.error("updateRow failed", err);
     await recordActivity({
@@ -315,7 +346,7 @@ export async function deleteRow(input: {
   primaryKeyColumn: string;
   primaryKeyValue: unknown;
   isConfirmed: true;
-}): Promise<ActionResult<{ deleted: TableRow }>> {
+}): Promise<ActionResult<{ deleted: TableRow; undo?: UndoSummary | null }>> {
   const parsed = deleteRowSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -367,6 +398,7 @@ export async function deleteRow(input: {
     if (result.rows.length === 0) {
       return { error: "Row not found." };
     }
+    const deletedRow = result.rows[0] as TableRow;
     await recordActivity({
       userId: session.user.id,
       connectionId,
@@ -375,7 +407,19 @@ export async function deleteRow(input: {
       detail: tableName,
     });
     revalidatePath(`/db/${connectionId}/table/${tableName}`);
-    return { data: { deleted: result.rows[0] as TableRow } };
+
+    // The RETURNING clause gave us the just-deleted row, which is exactly
+    // what an undo would need to re-INSERT.
+    const undo = await recordUndo({
+      connectionId,
+      schema,
+      tableName,
+      primaryKeyColumn,
+      primaryKeyValue,
+      operation: "delete",
+      previousValues: deletedRow,
+    });
+    return { data: { deleted: deletedRow, undo } };
   } catch (err) {
     console.error("deleteRow failed", err);
     await recordActivity({

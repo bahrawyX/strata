@@ -12,6 +12,7 @@ import {
   updateRow,
   type TableRow,
 } from "@/server/actions/table";
+import type { PendingUndo } from "./UndoToast";
 import type { ColumnInfo } from "@/server/actions/schema";
 import {
   arrayElementType,
@@ -42,7 +43,7 @@ export function RowEditor({
   columns: ColumnInfo[];
   mode: Mode;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (undo?: PendingUndo | null) => void;
 }) {
   const [values, setValues] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
@@ -137,7 +138,18 @@ export function RowEditor({
         setError(result.error);
         return;
       }
-      onSuccess();
+      // Insert has no undo; update returns one if the previous-row read
+      // succeeded. Pass it through so the parent can show the toast.
+      const maybeUndo =
+        "updated" in result.data && result.data.undo
+          ? {
+              id: result.data.undo.id,
+              tableName: result.data.undo.tableName,
+              operation: result.data.undo.operation,
+              expiresAt: result.data.undo.expiresAt,
+            }
+          : null;
+      onSuccess(maybeUndo);
     });
   }
 

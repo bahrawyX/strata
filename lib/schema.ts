@@ -171,3 +171,33 @@ export const savedQueries = pgTable("saved_queries", {
 });
 
 export type SavedQuery = typeof savedQueries.$inferSelect;
+
+// Pending row-edit undo buffer. Every successful UPDATE / DELETE the user
+// makes through the row editor (or via a single-statement non-SELECT in
+// the SQL editor) drops one of these rows. The toast that appears
+// post-edit reads it back to construct the "Undo" call.
+//
+// expiresAt is set to now() + 5 minutes by the recorder. The applyUndo
+// action refuses anything past that wall-clock. We don't run a cleanup
+// job — a future cron tick can prune rows where expires_at < now().
+export const pendingUndos = pgTable("pending_undos", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  connectionId: uuid("connection_id").notNull(),
+  // schema + table reference the user's connected DB (NOT the meta DB), so
+  // we store them as plain text and treat them as untrusted at apply-time.
+  schemaName: varchar("schema_name", { length: 64 }).notNull().default("public"),
+  tableName: varchar("table_name", { length: 128 }).notNull(),
+  primaryKeyColumn: varchar("primary_key_column", { length: 128 }).notNull(),
+  // PK value is stored as a JSON string so non-text PKs round-trip.
+  primaryKeyValue: text("primary_key_value").notNull(),
+  // 'update' = restore the previous values; 'delete' = re-insert the row.
+  operation: varchar("operation", { length: 16 }).notNull(),
+  previousValues: text("previous_values").notNull(), // JSON-serialized
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type PendingUndo = typeof pendingUndos.$inferSelect;
