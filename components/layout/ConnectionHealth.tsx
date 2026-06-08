@@ -51,7 +51,7 @@ export function ConnectionHealth({
         : "var(--accent, #FFFFFF)";
 
   return (
-    <div className="px-3 pb-3 border-b border-border">
+    <div className="px-4 py-4 border-b border-border space-y-3">
       <div className="flex items-center justify-between gap-2">
         <StatusPill intent={pill.intent} size="sm" pulse={initialHealth.status === "ok"}>
           {pill.label}
@@ -62,7 +62,7 @@ export function ConnectionHealth({
       </div>
 
       {points.length >= 2 ? (
-        <div className="mt-2.5">
+        <div>
           <Sparkline
             points={points}
             width={208}
@@ -72,7 +72,7 @@ export function ConnectionHealth({
             fillArea
             showEndDot
           />
-          <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
+          <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
             <span>
               {median !== null ? (
                 <>
@@ -91,13 +91,13 @@ export function ConnectionHealth({
           </div>
         </div>
       ) : (
-        <p className="mt-2 text-[10px] text-muted-foreground">
+        <p className="text-[10px] text-muted-foreground">
           Run “Test connection” to start tracking latency.
         </p>
       )}
 
       {initialHealth.lastFailureReason && (
-        <p className="mt-2 rounded border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 px-2 py-1 text-[10px] font-mono text-[var(--destructive)]">
+        <p className="rounded border border-[var(--destructive)]/30 bg-[var(--destructive)]/10 px-2 py-1 text-[10px] font-mono text-[var(--destructive)]">
           Last error · {initialHealth.lastFailureReason}
         </p>
       )}

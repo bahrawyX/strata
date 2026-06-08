@@ -103,7 +103,7 @@ export function CopilotPanel({ connectionId, onInsert, onReplace }: Props) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 px-6 py-2.5 text-left text-[12px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--accent-muted)]"
+        className="flex w-full items-center gap-2 px-6 py-3 text-left text-[12px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--accent-muted)]"
         aria-expanded={open}
       >
         <Sparkles className="h-3.5 w-3.5 text-[var(--accent)]" />

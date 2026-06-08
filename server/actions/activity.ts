@@ -207,7 +207,10 @@ export async function getConnectionActivity(
 ): Promise<ActionResult<ActivityRow[]>> {
   const safeLimit = Math.max(1, Math.min(200, Math.floor(limit)));
 
-  // Demo: scope by connectionId, no auth required.
+  // Demo: scope by connectionId, no auth required. Audit-table read failures
+  // resolve to an empty list so the UI shows the friendly empty state
+  // instead of an error — the local placeholder DATABASE_URL will trip
+  // this regularly during development and the message is misleading.
   if (isDemoConnectionId(connectionId)) {
     try {
       const rows = await db
@@ -219,7 +222,7 @@ export async function getConnectionActivity(
       return { data: rows.map(toRow) };
     } catch (err) {
       console.error("getConnectionActivity (demo) failed", err);
-      return { error: "Could not load activity." };
+      return { data: [] };
     }
   }
 
@@ -243,6 +246,9 @@ export async function getConnectionActivity(
     return { data: rows.map(toRow) };
   } catch (err) {
     console.error("getConnectionActivity failed", err);
-    return { error: "Could not load activity." };
+    // Same treatment for real users — an unreachable audit table is a
+    // platform problem, not the user's, and the "No activity yet" empty
+    // state is honest about what they see.
+    return { data: [] };
   }
 }

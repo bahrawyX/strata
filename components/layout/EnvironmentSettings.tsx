@@ -95,11 +95,11 @@ export function EnvironmentSettings({
   }
 
   return (
-    <div className="px-3 pb-3 space-y-2 border-b border-border">
+    <div className="px-4 py-4 space-y-3 border-b border-border">
       <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
         Environment
       </div>
-      <div className="grid grid-cols-3 gap-1">
+      <div className="grid grid-cols-3 gap-1.5">
         {(Object.entries(ENV_META) as [Environment, typeof ENV_META["dev"]][]).map(
           ([env, meta]) => {
             const active = env === environment;
@@ -116,7 +116,7 @@ export function EnvironmentSettings({
                     : `Mark as ${meta.label}`
                 }
                 className={cn(
-                  "flex flex-col items-center gap-1 rounded-md border px-2 py-1.5 text-[10px] font-medium transition-colors",
+                  "flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-[10px] font-medium transition-colors",
                   active
                     ? "border-[var(--accent)] bg-[var(--accent-muted)] text-foreground"
                     : "border-border text-muted-foreground hover:bg-muted/60",
@@ -143,7 +143,7 @@ export function EnvironmentSettings({
               : "Block writes"
         }
         className={cn(
-          "flex w-full items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-[11px] transition-colors",
+          "flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-[11px] transition-colors",
           readOnly
             ? "border-[var(--accent)]/40 bg-[var(--accent-muted)] text-foreground"
             : "border-border text-muted-foreground hover:bg-muted/60",

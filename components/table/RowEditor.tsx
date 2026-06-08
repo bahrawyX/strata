@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition, type FormEvent } from "react";
+import { motion } from "motion/react";
 import { Loader2, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -144,12 +145,23 @@ export function RowEditor({
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
-      <div
+      <motion.div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
       />
-      <div className="relative z-10 w-full max-w-md h-full bg-card border-l border-border shadow-2xl flex flex-col">
+      <motion.div
+        className="relative z-10 w-full max-w-md h-full bg-card border-l border-border shadow-2xl flex flex-col"
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        // Apple-style spring — same family the bahrawy Dialog uses.
+        transition={{ type: "spring", stiffness: 360, damping: 36, mass: 0.6 }}
+      >
         <div className="flex items-center justify-between px-5 h-14 border-b border-border">
           <div>
             <h2 className="text-sm font-medium">{title}</h2>
@@ -361,7 +373,7 @@ export function RowEditor({
             </Button>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 }

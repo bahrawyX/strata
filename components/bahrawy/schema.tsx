@@ -484,7 +484,12 @@ function TableCard({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={APPLE_SPRING}
-      whileHover={admin ? { y: 0 } : undefined}
+      // NOTE: the original bahrawy version did `whileHover={{ y: 0 }}` in
+      // admin mode. That snaps the card's y back to 0 (because we positioned
+      // it via the same motion value), which made it "fly away" to the top
+      // of the canvas the moment the cursor entered it. We don't want any
+      // hover-driven position change — drag + spotlight already provide
+      // plenty of feedback.
       className="min-w-[220px] select-none overflow-visible"
     >
       <div

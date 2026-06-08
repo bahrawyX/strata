@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AnimatePresence } from "motion/react";
 import { formatCellValue } from "./cell-utils";
 import { RowEditor } from "./RowEditor";
 import { ExportButton } from "@/components/query/ExportButton";
@@ -134,26 +135,33 @@ export function DataGrid({
       )}
 
       <div className="flex-1 min-h-0 overflow-auto scrollbar-thin">
-        <table className="min-w-full text-xs">
-          <thead className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm">
-            <tr className="border-b border-border">
+        <table className="min-w-full text-xs border-separate border-spacing-0">
+          <thead className="sticky top-0 z-10 bg-card/95 backdrop-blur-md">
+            <tr>
               {data.columns.map((c) => (
                 <th
                   key={c.name}
                   className={cn(
-                    "text-left px-3 py-2 font-medium whitespace-nowrap",
-                    c.isPrimaryKey && "border-l-2 border-l-primary"
+                    "text-left px-4 py-3 font-medium whitespace-nowrap border-b border-border align-bottom",
+                    c.isPrimaryKey && "border-l-2 border-l-[var(--accent)]/60"
                   )}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-foreground">{c.name}</span>
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <span className="font-mono text-[12px] text-foreground">
+                      {c.name}
+                    </span>
+                    <span className="rounded-full border border-border bg-muted/50 px-1.5 py-px text-[9px] uppercase tracking-wider text-muted-foreground">
                       {c.dataType}
                     </span>
+                    {c.isPrimaryKey && (
+                      <span className="rounded border border-[var(--accent)]/40 bg-[var(--accent-muted)] px-1.5 py-px text-[9px] uppercase tracking-wider text-[var(--accent)]">
+                        PK
+                      </span>
+                    )}
                   </div>
                 </th>
               ))}
-              <th className="w-20" />
+              <th className="w-24 border-b border-border" />
             </tr>
           </thead>
           <tbody>
@@ -170,6 +178,7 @@ export function DataGrid({
               data.rows.map((row, i) => (
                 <Row
                   key={i}
+                  index={i}
                   row={row}
                   columns={data.columns}
                   primaryKey={data.primaryKey}
@@ -240,21 +249,24 @@ export function DataGrid({
         </div>
       </div>
 
-      {editor && (
-        <RowEditor
-          connectionId={connectionId}
-          tableName={tableName}
-          columns={data.columns}
-          mode={editor}
-          onClose={onEditorClose}
-          onSuccess={onEditorSuccess}
-        />
-      )}
+      <AnimatePresence>
+        {editor && (
+          <RowEditor
+            connectionId={connectionId}
+            tableName={tableName}
+            columns={data.columns}
+            mode={editor}
+            onClose={onEditorClose}
+            onSuccess={onEditorSuccess}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 function Row({
+  index,
   row,
   columns,
   primaryKey,
@@ -265,6 +277,7 @@ function Row({
   onCancelDelete,
   onConfirmDelete,
 }: {
+  index: number;
   row: TableRow;
   columns: ColumnInfo[];
   primaryKey: string | null;
@@ -275,21 +288,27 @@ function Row({
   onCancelDelete: () => void;
   onConfirmDelete: () => void;
 }) {
+  const zebra = index % 2 === 1 ? "bg-muted/15" : "";
   return (
-    <tr className="group border-b border-border hover:bg-muted/30">
+    <tr
+      className={cn(
+        "group transition-colors hover:bg-[var(--accent-muted)]/40",
+        zebra
+      )}
+    >
       {columns.map((c) => {
         const cell = formatCellValue(row[c.name]);
         return (
           <td
             key={c.name}
             className={cn(
-              "px-3 py-2 align-top font-mono whitespace-nowrap",
-              c.isPrimaryKey && "border-l-2 border-l-primary/40"
+              "px-4 py-2.5 align-middle font-mono whitespace-nowrap border-b border-border/60",
+              c.isPrimaryKey && "border-l-2 border-l-[var(--accent)]/40"
             )}
             title={cell.full}
           >
             {cell.isNull ? (
-              <span className="inline-flex items-center rounded bg-muted px-1 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+              <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
                 NULL
               </span>
             ) : (
@@ -298,7 +317,7 @@ function Row({
           </td>
         );
       })}
-      <td className="px-2 py-1 text-right">
+      <td className="px-3 py-2 text-right border-b border-border/60">
         {isConfirming ? (
           <div className="inline-flex items-center gap-1 rounded-md border border-destructive/40 bg-destructive/10 px-1 py-0.5">
             <span className="text-[11px] text-foreground px-1">Delete?</span>
