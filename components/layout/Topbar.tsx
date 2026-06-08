@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogIn, LogOut } from "lucide-react";
+import { LogIn, LogOut, Search } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -59,6 +60,7 @@ export function Topbar({ viewer }: { viewer: ViewerProp }) {
       )}
 
       <div className="ml-auto flex items-center gap-2">
+        <CmdKHint />
         {isAuthed && viewer ? (
           <div className="hidden sm:flex flex-col items-end leading-tight">
             <span className="text-sm capitalize text-foreground">
@@ -91,5 +93,38 @@ export function Topbar({ viewer }: { viewer: ViewerProp }) {
         )}
       </div>
     </header>
+  );
+}
+
+function CmdKHint() {
+  // Mod-aware label: Cmd on Apple, Ctrl elsewhere. Determined client-side
+  // from navigator.platform so it doesn't flash the wrong key on first
+  // paint.
+  const [isMac, setIsMac] = useState(false);
+  useEffect(() => {
+    setIsMac(/Mac|iPhone|iPad/i.test(navigator.platform || ""));
+  }, []);
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        // Dispatch a synthetic Cmd+K so the global listener opens it.
+        window.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "k",
+            metaKey: true,
+            ctrlKey: true,
+          })
+        )
+      }
+      className="hidden items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-[var(--bg-elevated)] hover:text-foreground sm:inline-flex"
+      title="Open command palette"
+    >
+      <Search className="h-3 w-3" />
+      <span>Search</span>
+      <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px]">
+        {isMac ? "⌘" : "Ctrl"} K
+      </kbd>
+    </button>
   );
 }
