@@ -201,3 +201,67 @@ export const pendingUndos = pgTable("pending_undos", {
 });
 
 export type PendingUndo = typeof pendingUndos.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// Teams (Step 14). MVP scope: tables + invite tokens + role enum at the
+// validation layer. Existing connections.userId-scoped ownership remains
+// the authoritative gate for now; team-scoped connection sharing rides on
+// a future migration where we extend the ownership check in every read
+// action to ALSO accept "viewer or above of a team that owns the row".
+// ---------------------------------------------------------------------------
+
+export const teams = pgTable("teams", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 100 }).notNull(),
+  ownerId: text("owner_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type Team = typeof teams.$inferSelect;
+
+export const teamMembers = pgTable(
+  "team_members",
+  {
+    teamId: uuid("team_id")
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // owner | admin | member | viewer. Owners can transfer + delete the
+    // team; admins manage members + invites; members + viewers differ
+    // only on whether they can mutate team-shared connections.
+    role: varchar("role", { length: 16 }).notNull().default("member"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.teamId, t.userId] }),
+  })
+);
+
+export type TeamMember = typeof teamMembers.$inferSelect;
+
+// Invite tokens. Email is captured for display only; we don't dispatch
+// email yet (the user copies the invite URL manually) — this column
+// stays for when we wire up Resend / SES later.
+export const teamInvites = pgTable("team_invites", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  teamId: uuid("team_id")
+    .notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  email: varchar("email", { length: 254 }).notNull(),
+  role: varchar("role", { length: 16 }).notNull().default("member"),
+  // 32-char random URL-safe token. Stored plaintext because this is
+  // bearer-style and rotation is via expiration, not hashing.
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  invitedBy: text("invited_by").references(() => user.id, {
+    onDelete: "set null",
+  }),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type TeamInvite = typeof teamInvites.$inferSelect;

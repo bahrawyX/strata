@@ -108,6 +108,33 @@ export const toggleReadOnlySchema = z.object({
   readOnly: z.boolean(),
 });
 
+export const teamRoleSchema = z.enum(["owner", "admin", "member", "viewer"]);
+export type TeamRole = z.infer<typeof teamRoleSchema>;
+
+export const createTeamSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Team name is required.")
+    .max(100, "Team name is too long."),
+});
+
+export const inviteToTeamSchema = z.object({
+  teamId: z.string().uuid(),
+  email: emailSchema,
+  role: teamRoleSchema.exclude(["owner"]),
+});
+
+export const acceptInviteSchema = z.object({
+  token: z.string().min(16).max(64),
+});
+
+export const updateMemberRoleSchema = z.object({
+  teamId: z.string().uuid(),
+  userId: z.string().min(1),
+  role: teamRoleSchema.exclude(["owner"]),
+});
+
 export const sqlQuerySchema = z.object({
   connectionId: z.string().uuid("Invalid connection id."),
   query: z
