@@ -26,7 +26,22 @@ type SavedLink = { id: string; name: string; connectionId: string };
 type Props = {
   tables: TableLink[];
   savedQueries: SavedLink[];
+  /**
+   * When true, this palette doesn't listen for Cmd+K and doesn't render.
+   * Used by the outer dashboard layout to step aside when a richer
+   * connection-scoped palette is mounted by the inner layout.
+   */
+  inactive?: boolean;
 };
+
+// Module-level claim flag. The connection-scoped palette (mounted by
+// db/[connectionId]/layout.tsx) sets this on mount; the slim outer
+// palette mounted by (dashboard)/layout.tsx checks it and steps aside.
+// Refcounted in case of double-mount during HMR / Strict Mode.
+let activePaletteCount = 0;
+function isInnerPaletteActive(): boolean {
+  return activePaletteCount > 0;
+}
 
 /**
  * Global Cmd/Ctrl+K command palette. Mounted once per dashboard layout.
@@ -34,16 +49,37 @@ type Props = {
  * to whichever connection the user is currently on; routes + theme +
  * sign-out are static).
  */
-export function CommandPalette({ tables, savedQueries }: Props) {
+export function CommandPalette({
+  tables,
+  savedQueries,
+  inactive,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
 
+  // The connection-scoped palette claims the Mod+K listener. The slim
+  // outer palette refs the same flag and skips listening when an inner
+  // instance is mounted, so we don't get two palettes opening on the
+  // same keypress.
+  const isInnerScoped = tables.length > 0 || savedQueries.length > 0;
+
+  useEffect(() => {
+    if (!isInnerScoped) return;
+    activePaletteCount += 1;
+    return () => {
+      activePaletteCount = Math.max(0, activePaletteCount - 1);
+    };
+  }, [isInnerScoped]);
+
   // Hotkey listener: Cmd+K on macOS, Ctrl+K elsewhere. We let the bahrawy
   // CmdBar own Esc and arrow keys once it's open.
   useEffect(() => {
+    if (inactive) return;
     function onKey(e: KeyboardEvent) {
+      // Outer-only palettes step aside when an inner one is mounted.
+      if (!isInnerScoped && isInnerPaletteActive()) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setOpen((v) => !v);
@@ -51,7 +87,9 @@ export function CommandPalette({ tables, savedQueries }: Props) {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [inactive, isInnerScoped]);
+
+  if (inactive) return null;
 
   // Extract the connectionId from the current URL so table / saved-query
   // hits go to the right place. Falls back to whatever's in the props.

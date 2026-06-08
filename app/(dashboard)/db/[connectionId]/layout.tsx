@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import { SchemaTree } from "@/components/layout/SchemaTree";
 import { EnvironmentBanner } from "@/components/layout/EnvironmentBanner";
+import { CommandPalette } from "@/components/layout/CommandPalette";
 import { getConnectionById } from "@/server/actions/connections";
 import { getTables } from "@/server/actions/schema";
 import { getConnectionHealth } from "@/server/actions/activity";
+import { listSavedQueries } from "@/server/actions/saved-queries";
 import { isDemoConnectionId } from "@/lib/demo-data";
 
 export default async function DbLayout({
@@ -18,12 +20,25 @@ export default async function DbLayout({
   if ("error" in conn) {
     notFound();
   }
-  const [tablesResult, health] = await Promise.all([
+  const [tablesResult, health, savedResult] = await Promise.all([
     getTables(connectionId),
     getConnectionHealth(connectionId),
+    listSavedQueries(connectionId),
   ]);
   const tables = "error" in tablesResult ? [] : tablesResult.data;
+  const savedQueries =
+    "error" in savedResult ? [] : savedResult.data;
   const isDemo = isDemoConnectionId(connectionId);
+
+  const paletteTables = tables.map((t) => ({
+    name: t.name,
+    connectionId,
+  }));
+  const paletteSaved = savedQueries.map((q) => ({
+    id: q.id,
+    name: q.name,
+    connectionId: q.connectionId ?? connectionId,
+  }));
 
   return (
     <div className="flex h-full min-h-0">
@@ -46,6 +61,13 @@ export default async function DbLayout({
           {children}
         </div>
       </div>
+      {/*
+        Connection-scoped palette. Mounted here so a route change between
+        /db/A and /db/B triggers a fresh server-render with the new
+        connection's tables + saved queries. Overrides the slim outer
+        palette via DOM stacking (last-mounted listener wins on Mod+K).
+      */}
+      <CommandPalette tables={paletteTables} savedQueries={paletteSaved} />
     </div>
   );
 }
