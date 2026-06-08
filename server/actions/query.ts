@@ -10,6 +10,7 @@ import {
 import { recordActivity } from "@/lib/activity";
 import { redactErrorMessage, summarizeForAuditLog } from "@/lib/redact";
 import { READ_ONLY_REFUSAL, isDestructiveSql } from "@/lib/write-guard";
+import { parseSqlErrorPosition } from "@/lib/sql-editor-tools";
 import { getOptionalSession } from "./session";
 import { getConnectionRecordForUser } from "./connections";
 import type { ActionResult } from "./connections";
@@ -27,10 +28,14 @@ export type QueryResult = {
   command: string | null;
 };
 
+export type ExecuteQueryResult =
+  | { data: QueryResult }
+  | { error: string; position?: number };
+
 export async function executeQuery(input: {
   connectionId: string;
   query: string;
-}): Promise<ActionResult<QueryResult>> {
+}): Promise<ExecuteQueryResult> {
   const parsed = sqlQuerySchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid query." };
@@ -128,7 +133,16 @@ export async function executeQuery(input: {
       detail: summarizeForAuditLog("query", err),
       queryPreview,
     });
-    return { error: `Query failed: ${redactErrorMessage(err)}` };
+    // Pull position out of the RAW error before we redact — the redactor
+    // happens to strip "at character N" via the stack-frame pattern, so
+    // we'd lose it otherwise. The position is a numeric offset, not
+    // sensitive on its own.
+    const rawMsg = err instanceof Error ? err.message : String(err);
+    const position = parseSqlErrorPosition(rawMsg);
+    return {
+      error: `Query failed: ${redactErrorMessage(err)}`,
+      ...(position ? { position } : {}),
+    };
   } finally {
     if (client) {
       try {

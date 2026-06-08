@@ -29,6 +29,7 @@ export function SqlEditor({
   const [query, setQuery] = useState(initialQuery ?? "");
   const [result, setResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorPosition, setErrorPosition] = useState<number | null>(null);
   const [running, startTransition] = useTransition();
   const [saveOpen, setSaveOpen] = useState(false);
   const [resultView, setResultView] = useState<"grid" | "chart">("grid");
@@ -40,20 +41,25 @@ export function SqlEditor({
   const runningRef = useRef(running);
   runningRef.current = running;
 
-  const runQuery = useCallback(() => {
-    const q = queryRef.current;
-    if (!q.trim() || runningRef.current) return;
-    setError(null);
-    startTransition(async () => {
-      const res = await executeQuery({ connectionId, query: q });
-      if ("error" in res) {
-        setError(res.error);
-        setResult(null);
-        return;
-      }
-      setResult(res.data);
-    });
-  }, [connectionId]);
+  const runQuery = useCallback(
+    (chunk?: string) => {
+      const q = (chunk ?? queryRef.current).trim();
+      if (!q || runningRef.current) return;
+      setError(null);
+      setErrorPosition(null);
+      startTransition(async () => {
+        const res = await executeQuery({ connectionId, query: q });
+        if ("error" in res) {
+          setError(res.error);
+          setErrorPosition(res.position ?? null);
+          setResult(null);
+          return;
+        }
+        setResult(res.data);
+      });
+    },
+    [connectionId]
+  );
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -84,12 +90,18 @@ export function SqlEditor({
         <CodeMirrorSqlEditor
           connectionId={connectionId}
           value={query}
-          onChange={setQuery}
+          onChange={(v) => {
+            setQuery(v);
+            // Clear the error squiggle on any edit so it doesn't sit
+            // there pointing at stale offsets.
+            if (errorPosition !== null) setErrorPosition(null);
+          }}
           onRun={runQuery}
           disabled={running}
+          errorPosition={errorPosition}
         />
         <div className="mt-3 flex items-center gap-3">
-          <Button size="sm" onClick={runQuery} disabled={running || !query.trim()}>
+          <Button size="sm" onClick={() => runQuery()} disabled={running || !query.trim()}>
             {running ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
