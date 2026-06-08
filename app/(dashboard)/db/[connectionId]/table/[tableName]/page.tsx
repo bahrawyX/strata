@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTableData } from "@/server/actions/table";
 import { DataGrid } from "@/components/table/DataGrid";
+import { TableInsights } from "@/components/table/TableInsights";
 
 export default async function TablePage({
   params,
@@ -34,10 +35,19 @@ export default async function TablePage({
   }
 
   return (
-    <DataGrid
-      connectionId={connectionId}
-      tableName={tableName}
-      data={result.data}
-    />
+    <div className="flex h-full min-h-0 flex-col">
+      <TableInsights
+        connectionId={connectionId}
+        schema="public"
+        tableName={tableName}
+      />
+      <div className="flex-1 min-h-0">
+        <DataGrid
+          connectionId={connectionId}
+          tableName={tableName}
+          data={result.data}
+        />
+      </div>
+    </div>
   );
 }
