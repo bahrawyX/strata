@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useRef, useState, useTransition } from "react";
-import { AlertCircle, Loader2, Play, Save } from "lucide-react";
+import {
+  AlertCircle,
+  BarChart3,
+  Loader2,
+  Play,
+  Save,
+  Table,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { executeQuery, type QueryResult } from "@/server/actions/query";
@@ -10,6 +17,7 @@ import { CopilotPanel } from "./CopilotPanel";
 import { CodeMirrorSqlEditor } from "./CodeMirrorSqlEditor";
 import { SaveQueryDialog } from "./SaveQueryDialog";
 import { ExportButton } from "./ExportButton";
+import { ChartBuilder } from "./ChartBuilder";
 
 export function SqlEditor({
   connectionId,
@@ -23,6 +31,7 @@ export function SqlEditor({
   const [error, setError] = useState<string | null>(null);
   const [running, startTransition] = useTransition();
   const [saveOpen, setSaveOpen] = useState(false);
+  const [resultView, setResultView] = useState<"grid" | "chart">("grid");
 
   // Hold the latest query in a ref so the editor's onRun (which captures the
   // closure at mount) sees the up-to-date value when Ctrl/Cmd+Enter fires.
@@ -150,7 +159,34 @@ export function SqlEditor({
         )}
 
         {result && !error && (
-          <ResultGrid result={result} />
+          <div className="flex h-full min-h-0 flex-col">
+            {result.fields.length > 0 && result.rows.length > 0 && (
+              <div className="flex items-center gap-1 border-b border-border bg-card/40 px-6 py-2">
+                <ResultTabButton
+                  active={resultView === "grid"}
+                  onClick={() => setResultView("grid")}
+                  icon={<Table className="h-3.5 w-3.5" />}
+                  label="Table"
+                />
+                <ResultTabButton
+                  active={resultView === "chart"}
+                  onClick={() => setResultView("chart")}
+                  icon={<BarChart3 className="h-3.5 w-3.5" />}
+                  label="Visualize"
+                />
+              </div>
+            )}
+            <div className="flex-1 min-h-0 overflow-auto scrollbar-thin">
+              {resultView === "grid" ? (
+                <ResultGrid result={result} />
+              ) : (
+                <ChartBuilder
+                  fields={result.fields.map((f) => ({ name: f.name }))}
+                  rows={result.rows}
+                />
+              )}
+            </div>
+          </div>
         )}
 
         {!result && !error && (
@@ -160,6 +196,35 @@ export function SqlEditor({
         )}
       </div>
     </div>
+  );
+}
+
+function ResultTabButton({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors",
+        active
+          ? "bg-[var(--accent-muted)] text-foreground"
+          : "text-muted-foreground hover:bg-[var(--bg-elevated)] hover:text-foreground"
+      )}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
 
