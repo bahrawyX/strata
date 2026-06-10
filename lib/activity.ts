@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { db } from "./db";
 import { activityLog } from "./schema";
 
@@ -23,12 +24,7 @@ export type RecordParams = {
   queryPreview?: string | null;
 };
 
-/**
- * Persist one activity-log row. Writes are best-effort — a failed insert
- * never blocks the action the user was performing. Errors are logged
- * server-side so they're visible in Vercel logs.
- */
-export async function recordActivity(params: RecordParams): Promise<void> {
+async function persistActivityRow(params: RecordParams): Promise<void> {
   try {
     await db.insert(activityLog).values({
       userId: params.userId,
@@ -42,5 +38,26 @@ export async function recordActivity(params: RecordParams): Promise<void> {
   } catch (err) {
     // Never propagate audit-log failures into the user-facing surface.
     console.error("recordActivity failed", err);
+  }
+}
+
+/**
+ * Persist one activity-log row. Writes are best-effort AND no longer block
+ * the user-visible response: inside a Next request scope we dispatch via
+ * `after()` so the insert runs after the response has flushed. Outside a
+ * request scope (cron, scripts, tests) we fall back to awaiting normally.
+ *
+ * The signature is still async + `await`-able so callers don't need to
+ * change, but on the request path the await resolves the moment the
+ * scheduling completes.
+ */
+export async function recordActivity(params: RecordParams): Promise<void> {
+  try {
+    after(() => persistActivityRow(params));
+  } catch {
+    // `after()` throws when called outside a request scope (cron handlers,
+    // unit tests, scripts). Fall back to the legacy await — slower but
+    // works everywhere.
+    await persistActivityRow(params);
   }
 }

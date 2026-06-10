@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { savedQueries } from "@/lib/schema";
@@ -79,19 +79,24 @@ export async function listSavedQueries(
   if (!session) return { data: [] };
 
   try {
+    // Push the cross-connection filter into the SQL WHERE so we don't
+    // pull the user's entire saved-query history over the wire on every
+    // connection page load.
     const rows = await db
       .select()
       .from(savedQueries)
-      .where(eq(savedQueries.userId, session.user.id))
-      .orderBy(desc(savedQueries.updatedAt));
-    const filtered = rows
-      .filter(
-        (r) =>
-          r.connectionId === null || r.connectionId === connectionId
+      .where(
+        and(
+          eq(savedQueries.userId, session.user.id),
+          or(
+            isNull(savedQueries.connectionId),
+            eq(savedQueries.connectionId, connectionId)
+          )
+        )
       )
-      .map(toRow)
-      .sort(compareSaved);
-    return { data: filtered };
+      .orderBy(desc(savedQueries.updatedAt));
+    const data = rows.map(toRow).sort(compareSaved);
+    return { data };
   } catch (err) {
     console.error("listSavedQueries failed", err);
     return { error: "Could not load saved queries." };

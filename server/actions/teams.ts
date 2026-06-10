@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomBytes } from "node:crypto";
 import { db } from "@/lib/db";
@@ -129,9 +129,7 @@ export async function listMyTeams(): Promise<ActionResult<TeamSummary[]>> {
     return { data: [] };
   }
   try {
-    // teams the caller is a member of, with per-team member count rolled up
-    // in JS (cheaper to bring back small numbers than do COUNT/GROUP BY
-    // through Drizzle when membership tables are small).
+    // First fetch the user's own memberships — small, fast, one index hit.
     const memberships = await db
       .select()
       .from(teamMembers)
@@ -139,8 +137,23 @@ export async function listMyTeams(): Promise<ActionResult<TeamSummary[]>> {
     const teamIds = memberships.map((m) => m.teamId);
     if (teamIds.length === 0) return { data: [] };
 
-    const teamRows = await db.select().from(teams);
-    const allMembers = await db.select().from(teamMembers);
+    // Then fetch ONLY the teams the user belongs to, with member-count
+    // computed via a correlated subquery. Replaces the previous
+    // `SELECT * FROM teams; SELECT * FROM team_members` pair that
+    // scaled with the entire tenant base.
+    const teamRows = await db
+      .select({
+        id: teams.id,
+        name: teams.name,
+        createdAt: teams.createdAt,
+        memberCount: sql<number>`(
+          SELECT COUNT(*)::int
+          FROM ${teamMembers} m
+          WHERE m.team_id = ${teams.id}
+        )`,
+      })
+      .from(teams)
+      .where(inArray(teams.id, teamIds));
 
     const data: TeamSummary[] = teamIds
       .map((id) => {
@@ -153,7 +166,7 @@ export async function listMyTeams(): Promise<ActionResult<TeamSummary[]>> {
           id: t.id,
           name: t.name,
           role: myRole,
-          memberCount: allMembers.filter((m) => m.teamId === id).length,
+          memberCount: Number(t.memberCount),
           createdAt: t.createdAt,
         };
       })
