@@ -161,7 +161,7 @@ export function DataGrid({
                     <span className="font-mono text-[12px] text-foreground">
                       {c.name}
                     </span>
-                    <span className="rounded-full border border-border bg-muted/50 px-1.5 py-px text-[9px] uppercase tracking-wider text-muted-foreground">
+                    <span className="rounded-full border border-border bg-muted/50 px-1.5 py-px text-[9px] uppercase tracking-wider text-foreground/75">
                       {c.dataType}
                     </span>
                     {c.isPrimaryKey && (
@@ -324,7 +324,7 @@ function Row({
             title={cell.full}
           >
             {cell.isNull ? (
-              <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+              <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-foreground/80">
                 NULL
               </span>
             ) : (

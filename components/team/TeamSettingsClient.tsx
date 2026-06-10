@@ -78,7 +78,7 @@ export function TeamSettingsClient({
         <div className="flex items-center gap-3">
           <Users className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">Your teams</span>
-          <span className="rounded bg-muted px-1.5 py-px font-mono text-[10px] text-muted-foreground">
+          <span className="rounded bg-muted px-1.5 py-px font-mono text-[10px] text-foreground/80">
             {teams.length}
           </span>
         </div>
@@ -121,6 +121,7 @@ export function TeamSettingsClient({
               if (e.key === "Enter") handleCreate();
             }}
             placeholder="New team name"
+            aria-label="New team name"
             maxLength={100}
             disabled={pending}
             className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
@@ -315,7 +316,7 @@ function TeamDetail({
                   disabled={pending}
                 />
               ) : (
-                <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-foreground/80">
                   {m.role}
                 </span>
               )}
@@ -364,6 +365,7 @@ function TeamDetail({
               onChange={(e) => setInviteEmail(e.target.value)}
               placeholder="teammate@example.com"
               type="email"
+              aria-label="Teammate email address"
               disabled={pending}
               className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
             />

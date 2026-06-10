@@ -68,6 +68,9 @@ export function UndoToast({ undo, onDismiss }: Props) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.97 }}
           transition={{ type: "spring", stiffness: 360, damping: 28 }}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
         >
           <div className="flex items-center gap-3 px-4 py-3">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--accent-muted)]">

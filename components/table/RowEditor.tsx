@@ -284,7 +284,7 @@ export function RowEditor({
                       )}
                       {c.isGenerated && (
                         <span
-                          className="ml-1.5 inline-flex items-center gap-0.5 rounded border border-border bg-muted px-1 py-px text-[10px] font-medium uppercase text-muted-foreground"
+                          className="ml-1.5 inline-flex items-center gap-0.5 rounded border border-border bg-muted px-1 py-px text-[10px] font-medium uppercase text-foreground/80"
                           title="Generated column — value computed by Postgres, not editable."
                         >
                           <Sparkles className="h-2.5 w-2.5" />
@@ -312,11 +312,11 @@ export function RowEditor({
                   </div>
 
                   {nullFlags[c.name] ? (
-                    <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground italic">
+                    <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-foreground/70 italic">
                       NULL
                     </div>
                   ) : c.isGenerated ? (
-                    <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground font-mono">
+                    <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-foreground/80 font-mono">
                       {values[c.name] || "—"}
                     </div>
                   ) : isArray ? (

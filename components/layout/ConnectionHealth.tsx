@@ -185,6 +185,7 @@ function RotateButton({ connectionId }: { connectionId: string }) {
             placeholder="postgresql://user:pass@host:5432/dbname"
             rows={3}
             spellCheck={false}
+            aria-label="New Postgres connection string"
             className="w-full rounded-md border border-border bg-card px-3 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40 resize-none"
             disabled={pending}
           />

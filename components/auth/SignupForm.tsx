@@ -83,10 +83,13 @@ export function SignupForm() {
           onChange={(e) => setName(e.target.value)}
           onBlur={() => validateField("name")}
           aria-invalid={Boolean(errors.name)}
+          aria-describedby={errors.name ? "name-error" : undefined}
           disabled={submitting}
         />
         {errors.name && (
-          <p className="text-xs text-destructive">{errors.name}</p>
+          <p id="name-error" className="text-xs text-destructive">
+            {errors.name}
+          </p>
         )}
       </div>
 
@@ -100,10 +103,13 @@ export function SignupForm() {
           onChange={(e) => setEmail(e.target.value)}
           onBlur={() => validateField("email")}
           aria-invalid={Boolean(errors.email)}
+          aria-describedby={errors.email ? "email-error" : undefined}
           disabled={submitting}
         />
         {errors.email && (
-          <p className="text-xs text-destructive">{errors.email}</p>
+          <p id="email-error" className="text-xs text-destructive">
+            {errors.email}
+          </p>
         )}
       </div>
 
@@ -118,6 +124,9 @@ export function SignupForm() {
             onChange={(e) => setPassword(e.target.value)}
             onBlur={() => validateField("password")}
             aria-invalid={Boolean(errors.password)}
+            aria-describedby={
+              errors.password ? "password-error" : "password-hint"
+            }
             disabled={submitting}
             className="pr-10"
           />
@@ -136,9 +145,11 @@ export function SignupForm() {
           </button>
         </div>
         {errors.password ? (
-          <p className="text-xs text-destructive">{errors.password}</p>
+          <p id="password-error" className="text-xs text-destructive">
+            {errors.password}
+          </p>
         ) : (
-          <p className="text-xs text-muted-foreground">
+          <p id="password-hint" className="text-xs text-muted-foreground">
             At least 8 characters.
           </p>
         )}

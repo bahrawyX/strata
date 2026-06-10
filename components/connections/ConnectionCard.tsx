@@ -132,6 +132,8 @@ export function ConnectionCard({ connection }: { connection: ConnectionSummary }
               variant="ghost"
               size="sm"
               onClick={() => setConfirmingDelete(true)}
+              aria-label={`Delete connection ${connection.name}`}
+              title="Delete connection"
               className={cn("text-muted-foreground hover:text-destructive")}
             >
               <Trash2 className="h-3.5 w-3.5" />

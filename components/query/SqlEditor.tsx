@@ -293,7 +293,7 @@ function ResultGrid({ result }: { result: QueryResult }) {
                     title={cell.full}
                   >
                     {cell.isNull ? (
-                      <span className="inline-flex items-center rounded bg-muted px-1 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                      <span className="inline-flex items-center rounded bg-muted px-1 py-0.5 text-[10px] uppercase tracking-wide text-foreground/80">
                         NULL
                       </span>
                     ) : (

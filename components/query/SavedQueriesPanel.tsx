@@ -120,7 +120,7 @@ export function SavedQueriesPanel({
         <TabButton active={tab === "saved"} onClick={() => setTab("saved")}>
           <Star className="h-3.5 w-3.5" />
           Saved
-          <span className="rounded bg-muted px-1.5 py-px font-mono text-[10px] text-muted-foreground">
+          <span className="rounded bg-muted px-1.5 py-px font-mono text-[10px] text-foreground/80">
             {rows.length}
           </span>
         </TabButton>
@@ -130,7 +130,7 @@ export function SavedQueriesPanel({
         >
           <Clock className="h-3.5 w-3.5" />
           History
-          <span className="rounded bg-muted px-1.5 py-px font-mono text-[10px] text-muted-foreground">
+          <span className="rounded bg-muted px-1.5 py-px font-mono text-[10px] text-foreground/80">
             {initialHistory.length}
           </span>
         </TabButton>
@@ -197,6 +197,7 @@ export function SavedQueriesPanel({
                           if (e.key === "Escape") setEditingId(null);
                         }}
                         disabled={pending}
+                        aria-label="Rename saved query"
                         className="flex-1 rounded border border-border bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
                       />
                     ) : (
@@ -292,7 +293,7 @@ export function SavedQueriesPanel({
                     </div>
                   </div>
 
-                  <pre className="max-h-20 overflow-hidden rounded border border-border bg-muted/30 p-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
+                  <pre className="max-h-20 overflow-hidden rounded border border-border bg-muted/30 p-2 font-mono text-[11px] leading-relaxed text-foreground/70">
                     {row.query.length > 320
                       ? row.query.slice(0, 320) + "…"
                       : row.query}
@@ -417,7 +418,7 @@ function HistoryList({
             </Link>
           </div>
 
-          <pre className="max-h-16 overflow-hidden rounded border border-border bg-muted/30 p-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
+          <pre className="max-h-16 overflow-hidden rounded border border-border bg-muted/30 p-2 font-mono text-[11px] leading-relaxed text-foreground/70">
             {row.queryPreview}
           </pre>
 

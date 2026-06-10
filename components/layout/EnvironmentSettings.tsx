@@ -135,6 +135,9 @@ export function EnvironmentSettings({
         type="button"
         onClick={flipReadOnly}
         disabled={pending || disabled}
+        role="switch"
+        aria-checked={readOnly}
+        aria-label="Read-only mode"
         title={
           disabled
             ? "Demo connection is always read-only."
@@ -159,7 +162,7 @@ export function EnvironmentSettings({
             "rounded-full px-1.5 py-px font-mono text-[9px] uppercase",
             readOnly
               ? "bg-[var(--accent)] text-[var(--accent-foreground,white)]"
-              : "bg-muted text-muted-foreground"
+              : "bg-muted text-foreground/80"
           )}
         >
           {readOnly ? "on" : "off"}

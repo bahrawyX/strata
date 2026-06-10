@@ -153,6 +153,7 @@ export function CopilotPanel({ connectionId, onInsert, onReplace }: Props) {
               placeholder="e.g. Top 10 users by total order value in the last 30 days"
               rows={2}
               disabled={submitting}
+              aria-label="Describe what you want the co-pilot to write SQL for"
               className="flex-1 resize-none rounded-md border border-border bg-[var(--bg-base)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]"
             />
             <button

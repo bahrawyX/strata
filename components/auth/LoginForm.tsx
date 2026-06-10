@@ -82,10 +82,13 @@ export function LoginForm() {
           onChange={(e) => setEmail(e.target.value)}
           onBlur={() => validateField("email")}
           aria-invalid={Boolean(errors.email)}
+          aria-describedby={errors.email ? "email-error" : undefined}
           disabled={submitting}
         />
         {errors.email && (
-          <p className="text-xs text-destructive">{errors.email}</p>
+          <p id="email-error" className="text-xs text-destructive">
+            {errors.email}
+          </p>
         )}
       </div>
 
@@ -100,6 +103,7 @@ export function LoginForm() {
             onChange={(e) => setPassword(e.target.value)}
             onBlur={() => validateField("password")}
             aria-invalid={Boolean(errors.password)}
+            aria-describedby={errors.password ? "password-error" : undefined}
             disabled={submitting}
             className="pr-10"
           />
@@ -118,7 +122,9 @@ export function LoginForm() {
           </button>
         </div>
         {errors.password && (
-          <p className="text-xs text-destructive">{errors.password}</p>
+          <p id="password-error" className="text-xs text-destructive">
+            {errors.password}
+          </p>
         )}
       </div>
 
