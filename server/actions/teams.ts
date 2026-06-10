@@ -15,6 +15,7 @@ import {
   updateMemberRoleSchema,
 } from "@/lib/validations";
 import { requireSession } from "./session";
+import { SIGN_IN_TO_CONTINUE, SIGN_IN_TO_MAKE_CHANGES } from "@/lib/server-actions";
 import type { ActionResult } from "@/lib/server-actions";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -89,7 +90,7 @@ export async function createTeam(input: {
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to create a team." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
   try {
     const [team] = await db
@@ -192,7 +193,7 @@ export async function getTeamDetail(
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to view this team." };
+    return { error: SIGN_IN_TO_CONTINUE };
   }
   const role = await getRoleOrNull(teamId, session.user.id);
   if (!role) return { error: "You're not a member of this team." };
@@ -275,7 +276,7 @@ export async function inviteToTeam(input: {
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to manage team invites." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
   const role = await getRoleOrNull(parsed.data.teamId, session.user.id);
   if (!role || !canManageMembers(role)) {
@@ -322,7 +323,7 @@ export async function revokeInvite(
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to manage team invites." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
   try {
     // Look up the invite first so we can check the caller's role on the
@@ -357,7 +358,7 @@ export async function acceptInvite(input: {
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to accept this invite." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
   try {
     const [invite] = await db
@@ -428,7 +429,7 @@ export async function removeMember(input: {
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to manage members." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
   const role = await getRoleOrNull(parsed.data.teamId, session.user.id);
   if (!role || !canManageMembers(role)) {
@@ -472,7 +473,7 @@ export async function updateMemberRole(input: {
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to manage members." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
   const callerRole = await getRoleOrNull(
     parsed.data.teamId,

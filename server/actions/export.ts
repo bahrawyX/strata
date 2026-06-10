@@ -21,10 +21,8 @@ import {
 } from "@/lib/validations";
 import { z } from "zod";
 import { getOptionalSession } from "./session";
-import {
-  getConnectionRecordForUser,
-  type ActionResult,
-} from "@/lib/server-actions";
+import { getConnectionRecordForUser,
+  type ActionResult, SIGN_IN_TO_MAKE_CHANGES } from "@/lib/server-actions";
 
 const EXPORT_ROW_CAP = 10_000;
 
@@ -93,7 +91,7 @@ export async function exportTableData(input: {
   // ---- Real connection.
   const session = await getOptionalSession().catch(() => null);
   if (!session) {
-    return { error: "Sign in to export real-connection data." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
   const record = await getConnectionRecordForUser(
     connectionId,

@@ -12,10 +12,8 @@ import { redactErrorMessage, summarizeForAuditLog } from "@/lib/redact";
 import { READ_ONLY_REFUSAL, isDestructiveSql } from "@/lib/write-guard";
 import { parseSqlErrorPosition } from "@/lib/sql-editor-tools";
 import { getOptionalSession } from "./session";
-import {
-  getConnectionRecordForUser,
-  type ActionResult,
-} from "@/lib/server-actions";
+import { getConnectionRecordForUser,
+  type ActionResult, SIGN_IN_TO_MAKE_CHANGES } from "@/lib/server-actions";
 
 export type QueryField = {
   name: string;
@@ -72,7 +70,7 @@ export async function executeQuery(input: {
 
   const session = await getOptionalSession().catch(() => null);
   if (!session) {
-    return { error: "Sign in to run live queries." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
 
   const record = await getConnectionRecordForUser(

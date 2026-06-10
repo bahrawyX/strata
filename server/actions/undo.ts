@@ -12,10 +12,8 @@ import { redactErrorMessage, summarizeForAuditLog } from "@/lib/redact";
 import { READ_ONLY_REFUSAL } from "@/lib/write-guard";
 import { isDemoConnectionId } from "@/lib/demo-data";
 import { getOptionalSession, requireSession } from "./session";
-import {
-  getConnectionRecordForUser,
-  type ActionResult,
-} from "@/lib/server-actions";
+import { getConnectionRecordForUser,
+  type ActionResult, SIGN_IN_TO_MAKE_CHANGES } from "@/lib/server-actions";
 
 const UNDO_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -107,7 +105,7 @@ export async function applyUndo(
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to undo edits." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
 
   // Atomically claim + read the undo row. Doing this as one DELETE …

@@ -2,13 +2,16 @@ import { after } from "next/server";
 import { db } from "./db";
 import { activityLog } from "./schema";
 
+// We deliberately don't record "schema.read" — schema reads happen on
+// every page navigation and would dominate the audit log. If a future
+// audit-policy review wants per-schema-read attribution, re-add it here
+// AND make sure the read actions call recordActivity().
 export type ActivityAction =
   | "connect.test"
   | "query.execute"
   | "row.insert"
   | "row.update"
   | "row.delete"
-  | "schema.read"
   | "copilot.draft";
 
 export type RecordParams = {

@@ -13,6 +13,7 @@ import {
   isDemoConnectionId,
 } from "@/lib/demo-data";
 import { getOptionalSession, requireSession } from "./session";
+import { SIGN_IN_TO_MAKE_CHANGES } from "@/lib/server-actions";
 import type { ActionResult } from "@/lib/server-actions";
 
 /**
@@ -127,7 +128,7 @@ export async function saveQuery(input: {
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to save queries." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
 
   try {
@@ -168,7 +169,7 @@ export async function updateSavedQuery(input: {
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to edit saved queries." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
 
   try {
@@ -208,7 +209,7 @@ export async function deleteSavedQuery(
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to delete saved queries." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
   try {
     const result = await db
@@ -242,7 +243,7 @@ export async function toggleSavedQueryStar(
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to star saved queries." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
   try {
     // Read current value under user ownership; flip; write back. Two-step so

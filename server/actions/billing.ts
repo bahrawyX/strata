@@ -10,10 +10,14 @@ import {
   isStripeConfigured,
 } from "@/lib/stripe";
 import { getViewer } from "@/lib/viewer";
+import type { ActionResult } from "@/lib/server-actions";
 
-export type BillingResult<T = void> =
-  | { ok: true; data?: T }
-  | { ok: false; error: string };
+// Billing actions return ActionResult<void> for consistency with every
+// other server action. The success branch is unreachable in practice
+// because both call paths redirect() before returning, but typing it
+// this way lets call sites use the same `if ("error" in res)` discriminator
+// they use everywhere else.
+type BillingResult = ActionResult<void>;
 
 /**
  * Create (or reuse) the user's Stripe customer, open a Checkout Session for
@@ -26,21 +30,17 @@ export async function startProCheckout(): Promise<BillingResult> {
     redirect("/signup");
   }
   if (!isStripeConfigured()) {
-    return {
-      ok: false,
-      error:
+    return { error:
         "Billing isn't configured yet on the server (STRIPE_SECRET_KEY missing). Try again once a Stripe account is connected.",
     };
   }
   const stripe = getStripe();
   if (!stripe) {
-    return { ok: false, error: "Stripe client unavailable." };
+    return { error: "Stripe client unavailable." };
   }
   const priceId = getStripePriceIdPro();
   if (!priceId) {
-    return {
-      ok: false,
-      error:
+    return { error:
         "Pro plan price isn't configured (STRIPE_PRICE_ID_PRO missing).",
     };
   }
@@ -56,9 +56,7 @@ export async function startProCheckout(): Promise<BillingResult> {
     customerId = row?.stripeCustomerId ?? null;
   } catch (err) {
     console.error("startProCheckout: subscription lookup failed", err);
-    return {
-      ok: false,
-      error:
+    return { error:
         "Could not read your subscription. Check the database connection and try again.",
     };
   }
@@ -99,7 +97,7 @@ export async function startProCheckout(): Promise<BillingResult> {
     });
 
     if (!session.url) {
-      return { ok: false, error: "Stripe didn't return a checkout URL." };
+      return { error: "Stripe didn't return a checkout URL." };
     }
     redirect(session.url);
   } catch (err) {
@@ -108,9 +106,7 @@ export async function startProCheckout(): Promise<BillingResult> {
       throw err;
     }
     console.error("startProCheckout failed", err);
-    return {
-      ok: false,
-      error: "Could not start checkout. Try again in a few seconds.",
+    return { error: "Could not start checkout. Try again in a few seconds.",
     };
   }
 }
@@ -125,14 +121,12 @@ export async function openBillingPortal(): Promise<BillingResult> {
     redirect("/login");
   }
   if (!isStripeConfigured()) {
-    return {
-      ok: false,
-      error: "Billing isn't configured on the server.",
+    return { error: "Billing isn't configured on the server.",
     };
   }
   const stripe = getStripe();
   if (!stripe) {
-    return { ok: false, error: "Stripe client unavailable." };
+    return { error: "Stripe client unavailable." };
   }
 
   let customerId: string | null = null;
@@ -145,13 +139,11 @@ export async function openBillingPortal(): Promise<BillingResult> {
     customerId = row?.stripeCustomerId ?? null;
   } catch (err) {
     console.error("openBillingPortal: lookup failed", err);
-    return { ok: false, error: "Could not read your subscription." };
+    return { error: "Could not read your subscription." };
   }
 
   if (!customerId) {
-    return {
-      ok: false,
-      error: "No active subscription yet — upgrade first.",
+    return { error: "No active subscription yet — upgrade first.",
     };
   }
 
@@ -168,9 +160,7 @@ export async function openBillingPortal(): Promise<BillingResult> {
       throw err;
     }
     console.error("openBillingPortal failed", err);
-    return {
-      ok: false,
-      error: "Could not open the billing portal.",
+    return { error: "Could not open the billing portal.",
     };
   }
 }

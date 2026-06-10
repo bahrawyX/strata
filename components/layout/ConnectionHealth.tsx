@@ -8,17 +8,17 @@ import { Dialog } from "@/components/bahrawy/dialog";
 import { useToast } from "@/components/bahrawy/toast";
 import { Button } from "@/components/ui/button";
 import { rotateConnectionString } from "@/server/actions/connections";
-import { type ConnectionHealth } from "@/server/actions/activity";
+import type { ConnectionHealthSnapshot } from "@/server/actions/activity";
 import { relativeTime } from "@/lib/utils";
 
 type Props = {
   connectionId: string;
   isDemo: boolean;
-  initialHealth: ConnectionHealth;
+  initialHealth: ConnectionHealthSnapshot;
 };
 
 const PILL: Record<
-  ConnectionHealth["status"],
+  ConnectionHealthSnapshot["status"],
   { intent: "online" | "away" | "busy" | "offline"; label: string }
 > = {
   ok: { intent: "online", label: "Healthy" },

@@ -27,7 +27,7 @@ export function BillingActions({
   function onUpgrade() {
     startTransition(async () => {
       const res = await startProCheckout();
-      if (!res.ok) {
+      if (res && "error" in res) {
         alert(res.error);
         router.refresh();
       }
@@ -37,7 +37,7 @@ export function BillingActions({
   function onManage() {
     startTransition(async () => {
       const res = await openBillingPortal();
-      if (!res.ok) {
+      if (res && "error" in res) {
         alert(res.error);
         router.refresh();
       }

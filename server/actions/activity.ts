@@ -8,6 +8,7 @@ import {
   isDemoConnectionId,
 } from "@/lib/demo-data";
 import { getOptionalSession } from "./session";
+import { SIGN_IN_TO_CONTINUE } from "@/lib/server-actions";
 import type { ActionResult } from "@/lib/server-actions";
 
 export type ActivityRow = {
@@ -21,7 +22,7 @@ export type ActivityRow = {
 
 export type ConnectionHealthStatus = "ok" | "slow" | "failed" | "unknown";
 
-export type ConnectionHealth = {
+export type ConnectionHealthSnapshot = {
   status: ConnectionHealthStatus;
   latencyHistory: number[];
   lastFailureReason: string | null;
@@ -31,7 +32,7 @@ export type ConnectionHealth = {
 
 // Demo seed for the connection-health view. Stable values so the UI doesn't
 // jitter between renders.
-const DEMO_HEALTH: ConnectionHealth = {
+const DEMO_HEALTH: ConnectionHealthSnapshot = {
   status: "ok",
   latencyHistory: [22, 18, 19, 21, 17, 16, 19, 23, 20, 18, 16, 17],
   lastFailureReason: null,
@@ -52,7 +53,7 @@ const DEMO_HEALTH: ConnectionHealth = {
  */
 export async function getConnectionHealth(
   connectionId: string
-): Promise<ConnectionHealth> {
+): Promise<ConnectionHealthSnapshot> {
   if (isDemoConnectionId(connectionId)) {
     return DEMO_HEALTH;
   }
@@ -161,7 +162,7 @@ export async function getQueryHistory(
 
   const session = await getOptionalSession().catch(() => null);
   if (!session) {
-    return { error: "Sign in to view query history." };
+    return { error: SIGN_IN_TO_CONTINUE };
   }
 
   try {
@@ -228,7 +229,7 @@ export async function getConnectionActivity(
 
   const session = await getOptionalSession().catch(() => null);
   if (!session) {
-    return { error: "Sign in to view this connection's activity." };
+    return { error: SIGN_IN_TO_CONTINUE };
   }
 
   try {

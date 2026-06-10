@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import {
   CheckCircle2,
   Clock,
-  Database,
   Pencil,
   Plus,
   Sparkles,
@@ -53,11 +52,6 @@ const ACTIONS: Record<string, ActionMeta> = {
     label: "Deleted row",
     icon: Trash2,
     tint: "text-[var(--destructive)]",
-  },
-  "schema.read": {
-    label: "Read schema",
-    icon: Database,
-    tint: "text-[var(--text-secondary)]",
   },
   "copilot.draft": {
     label: "Co-pilot drafted SQL",

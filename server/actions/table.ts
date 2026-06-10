@@ -12,12 +12,12 @@ import {
 import { getDemoTableData, isDemoConnectionId } from "@/lib/demo-data";
 import { recordActivity } from "@/lib/activity";
 import { redactErrorMessage, summarizeForAuditLog } from "@/lib/redact";
-import { READ_ONLY_REFUSAL } from "@/lib/write-guard";
 import { recordUndo, type UndoSummary } from "./undo";
-import { getOptionalSession, requireSession } from "./session";
-import { getConnectionRecordForUser } from "@/lib/server-actions";
+import { getOptionalSession } from "./session";
 import { getTableColumns, type ColumnInfo } from "./schema";
-import type { ActionResult } from "@/lib/server-actions";
+import { getConnectionRecordForUser,
+  withConnection,
+  type ActionResult, SIGN_IN_TO_CONTINUE } from "@/lib/server-actions";
 
 export type TableRow = Record<string, unknown>;
 
@@ -68,7 +68,7 @@ export async function getTableData(input: {
 
   const session = await getOptionalSession().catch(() => null);
   if (!session) {
-    return { error: "Sign in to inspect real tables." };
+    return { error: SIGN_IN_TO_CONTINUE };
   }
   const record = await getConnectionRecordForUser(
     connectionId,
@@ -138,74 +138,65 @@ export async function insertRow(input: {
   }
   const { connectionId, tableName, schema, values } = parsed.data;
 
-  if (isDemoConnectionId(connectionId)) {
-    return { error: DEMO_WRITE_DENIED };
-  }
+  return withConnection<{ inserted: TableRow }>(
+    { connectionId, write: true, demoRefusal: DEMO_WRITE_DENIED },
+    async ({ session, record }) => {
+      const columnsResult = await getTableColumns(
+        connectionId,
+        schema,
+        tableName
+      );
+      if ("error" in columnsResult) return { error: columnsResult.error };
+      const allowed = new Set(columnsResult.data.map((c) => c.name));
+      const colErr = validateColumnNames(values, allowed);
+      if (colErr) return { error: colErr };
 
-  let session;
-  try {
-    session = await requireSession();
-  } catch {
-    return { error: DEMO_WRITE_DENIED };
-  }
+      const entries = Object.entries(values).filter(([, v]) => v !== undefined);
+      if (entries.length === 0) {
+        return { error: "Provide at least one value to insert." };
+      }
+      const cols = entries.map(([k]) => quoteIdent(k)).join(", ");
+      const placeholders = entries.map((_, i) => `$${i + 1}`).join(", ");
+      const params = entries.map(([, v]) => v);
+      const qualified = `${quoteIdent(schema)}.${quoteIdent(tableName)}`;
 
-  const record = await getConnectionRecordForUser(
-    connectionId,
-    session.user.id
-  );
-  if (!record) return { error: "Connection not found." };
-  if (record.readOnly) return { error: READ_ONLY_REFUSAL };
-
-  const columnsResult = await getTableColumns(connectionId, schema, tableName);
-  if ("error" in columnsResult) return { error: columnsResult.error };
-  const allowed = new Set(columnsResult.data.map((c) => c.name));
-  const colErr = validateColumnNames(values, allowed);
-  if (colErr) return { error: colErr };
-
-  const entries = Object.entries(values).filter(([, v]) => v !== undefined);
-  if (entries.length === 0) {
-    return { error: "Provide at least one value to insert." };
-  }
-  const cols = entries.map(([k]) => quoteIdent(k)).join(", ");
-  const placeholders = entries.map((_, i) => `$${i + 1}`).join(", ");
-  const params = entries.map(([, v]) => v);
-  const qualified = `${quoteIdent(schema)}.${quoteIdent(tableName)}`;
-
-  let client;
-  try {
-    client = await getClient(record.encryptedConnectionString);
-    const result = await client.query(
-      `INSERT INTO ${qualified} (${cols}) VALUES (${placeholders}) RETURNING *`,
-      params
-    );
-    await recordActivity({
-      userId: session.user.id,
-      connectionId,
-      action: "row.insert",
-      success: true,
-      detail: tableName,
-    });
-    revalidatePath(`/db/${connectionId}/table/${tableName}`);
-    return { data: { inserted: result.rows[0] as TableRow } };
-  } catch (err) {
-    console.error("insertRow failed", err);
-    await recordActivity({
-      userId: session.user.id,
-      connectionId,
-      action: "row.insert",
-      success: false,
-      detail: summarizeForAuditLog("insert", err),
-    });
-    return { error: redactErrorMessage(err) };
-  } finally {
-    if (client) {
+      let client;
       try {
-        await client.end();
-      } catch {
-        // ignore
+        client = await getClient(record.encryptedConnectionString);
+        const result = await client.query(
+          `INSERT INTO ${qualified} (${cols}) VALUES (${placeholders}) RETURNING *`,
+          params
+        );
+        await recordActivity({
+          userId: session.user.id,
+          connectionId,
+          action: "row.insert",
+          success: true,
+          detail: tableName,
+        });
+        revalidatePath(`/db/${connectionId}/table/${tableName}`);
+        return { data: { inserted: result.rows[0] as TableRow } };
+      } catch (err) {
+        console.error("insertRow failed", err);
+        await recordActivity({
+          userId: session.user.id,
+          connectionId,
+          action: "row.insert",
+          success: false,
+          detail: summarizeForAuditLog("insert", err),
+        });
+        return { error: redactErrorMessage(err) };
+      } finally {
+        if (client) {
+          try {
+            await client.end();
+          } catch {
+            // ignore
+          }
+        }
       }
     }
-  }
+  );
 }
 
 export async function updateRow(input: {
@@ -229,114 +220,105 @@ export async function updateRow(input: {
     values,
   } = parsed.data;
 
-  if (isDemoConnectionId(connectionId)) {
-    return { error: DEMO_WRITE_DENIED };
-  }
-
-  let session;
-  try {
-    session = await requireSession();
-  } catch {
-    return { error: DEMO_WRITE_DENIED };
-  }
-
-  const record = await getConnectionRecordForUser(
-    connectionId,
-    session.user.id
-  );
-  if (!record) return { error: "Connection not found." };
-  if (record.readOnly) return { error: READ_ONLY_REFUSAL };
-
-  const columnsResult = await getTableColumns(connectionId, schema, tableName);
-  if ("error" in columnsResult) return { error: columnsResult.error };
-  const allowed = new Set(columnsResult.data.map((c) => c.name));
-  if (!allowed.has(primaryKeyColumn)) {
-    return { error: "Invalid primary key column." };
-  }
-  const colErr = validateColumnNames(values, allowed);
-  if (colErr) return { error: colErr };
-
-  const entries = Object.entries(values).filter(([, v]) => v !== undefined);
-  if (entries.length === 0) {
-    return { error: "No changes to apply." };
-  }
-  const setClause = entries
-    .map(([k], i) => `${quoteIdent(k)} = $${i + 1}`)
-    .join(", ");
-  const params = entries.map(([, v]) => v);
-  params.push(primaryKeyValue);
-  const qualified = `${quoteIdent(schema)}.${quoteIdent(tableName)}`;
-
-  let client;
-  try {
-    client = await getClient(record.encryptedConnectionString);
-    // Read the row first so we can persist its current state as the undo
-    // payload. If this read fails we still proceed with the write — undo
-    // is a nice-to-have, not a precondition for the user's edit.
-    let previousRow: TableRow | null = null;
-    try {
-      const prev = await client.query(
-        `SELECT * FROM ${qualified} WHERE ${quoteIdent(
-          primaryKeyColumn
-        )} = $1 LIMIT 1`,
-        [primaryKeyValue]
-      );
-      previousRow = (prev.rows[0] as TableRow) ?? null;
-    } catch {
-      previousRow = null;
-    }
-
-    const result = await client.query(
-      `UPDATE ${qualified} SET ${setClause} WHERE ${quoteIdent(
-        primaryKeyColumn
-      )} = $${params.length} RETURNING *`,
-      params
-    );
-    if (result.rows.length === 0) {
-      return { error: "Row not found." };
-    }
-    await recordActivity({
-      userId: session.user.id,
-      connectionId,
-      action: "row.update",
-      success: true,
-      detail: tableName,
-    });
-    revalidatePath(`/db/${connectionId}/table/${tableName}`);
-
-    // Persist undo iff we successfully captured the previous state.
-    let undo: UndoSummary | null = null;
-    if (previousRow) {
-      undo = await recordUndo({
+  return withConnection<{ updated: TableRow; undo?: UndoSummary | null }>(
+    { connectionId, write: true, demoRefusal: DEMO_WRITE_DENIED },
+    async ({ session, record }) => {
+      const columnsResult = await getTableColumns(
         connectionId,
         schema,
-        tableName,
-        primaryKeyColumn,
-        primaryKeyValue,
-        operation: "update",
-        previousValues: previousRow,
-      });
-    }
-    return { data: { updated: result.rows[0] as TableRow, undo } };
-  } catch (err) {
-    console.error("updateRow failed", err);
-    await recordActivity({
-      userId: session.user.id,
-      connectionId,
-      action: "row.update",
-      success: false,
-      detail: summarizeForAuditLog("update", err),
-    });
-    return { error: redactErrorMessage(err) };
-  } finally {
-    if (client) {
+        tableName
+      );
+      if ("error" in columnsResult) return { error: columnsResult.error };
+      const allowed = new Set(columnsResult.data.map((c) => c.name));
+      if (!allowed.has(primaryKeyColumn)) {
+        return { error: "Invalid primary key column." };
+      }
+      const colErr = validateColumnNames(values, allowed);
+      if (colErr) return { error: colErr };
+
+      const entries = Object.entries(values).filter(([, v]) => v !== undefined);
+      if (entries.length === 0) {
+        return { error: "No changes to apply." };
+      }
+      const setClause = entries
+        .map(([k], i) => `${quoteIdent(k)} = $${i + 1}`)
+        .join(", ");
+      const params = entries.map(([, v]) => v);
+      params.push(primaryKeyValue);
+      const qualified = `${quoteIdent(schema)}.${quoteIdent(tableName)}`;
+
+      let client;
       try {
-        await client.end();
-      } catch {
-        // ignore
+        client = await getClient(record.encryptedConnectionString);
+        // Read the row first so we can persist its current state as the
+        // undo payload. If this read fails we still proceed with the
+        // write — undo is a nice-to-have, not a precondition.
+        let previousRow: TableRow | null = null;
+        try {
+          const prev = await client.query(
+            `SELECT * FROM ${qualified} WHERE ${quoteIdent(
+              primaryKeyColumn
+            )} = $1 LIMIT 1`,
+            [primaryKeyValue]
+          );
+          previousRow = (prev.rows[0] as TableRow) ?? null;
+        } catch {
+          previousRow = null;
+        }
+
+        const result = await client.query(
+          `UPDATE ${qualified} SET ${setClause} WHERE ${quoteIdent(
+            primaryKeyColumn
+          )} = $${params.length} RETURNING *`,
+          params
+        );
+        if (result.rows.length === 0) {
+          return { error: "Row not found." };
+        }
+        await recordActivity({
+          userId: session.user.id,
+          connectionId,
+          action: "row.update",
+          success: true,
+          detail: tableName,
+        });
+        revalidatePath(`/db/${connectionId}/table/${tableName}`);
+
+        // Persist undo iff we successfully captured the previous state.
+        let undo: UndoSummary | null = null;
+        if (previousRow) {
+          undo = await recordUndo({
+            connectionId,
+            schema,
+            tableName,
+            primaryKeyColumn,
+            primaryKeyValue,
+            operation: "update",
+            previousValues: previousRow,
+          });
+        }
+        return { data: { updated: result.rows[0] as TableRow, undo } };
+      } catch (err) {
+        console.error("updateRow failed", err);
+        await recordActivity({
+          userId: session.user.id,
+          connectionId,
+          action: "row.update",
+          success: false,
+          detail: summarizeForAuditLog("update", err),
+        });
+        return { error: redactErrorMessage(err) };
+      } finally {
+        if (client) {
+          try {
+            await client.end();
+          } catch {
+            // ignore
+          }
+        }
       }
     }
-  }
+  );
 }
 
 export async function deleteRow(input: {
@@ -359,85 +341,76 @@ export async function deleteRow(input: {
     primaryKeyValue,
   } = parsed.data;
 
-  if (isDemoConnectionId(connectionId)) {
-    return { error: DEMO_WRITE_DENIED };
-  }
+  return withConnection<{ deleted: TableRow; undo?: UndoSummary | null }>(
+    { connectionId, write: true, demoRefusal: DEMO_WRITE_DENIED },
+    async ({ session, record }) => {
+      const columnsResult = await getTableColumns(
+        connectionId,
+        schema,
+        tableName
+      );
+      if ("error" in columnsResult) return { error: columnsResult.error };
+      const allowed = new Set(columnsResult.data.map((c) => c.name));
+      if (!allowed.has(primaryKeyColumn)) {
+        return { error: "Invalid primary key column." };
+      }
 
-  let session;
-  try {
-    session = await requireSession();
-  } catch {
-    return { error: DEMO_WRITE_DENIED };
-  }
+      const qualified = `${quoteIdent(schema)}.${quoteIdent(tableName)}`;
 
-  const record = await getConnectionRecordForUser(
-    connectionId,
-    session.user.id
-  );
-  if (!record) return { error: "Connection not found." };
-  if (record.readOnly) return { error: READ_ONLY_REFUSAL };
-
-  const columnsResult = await getTableColumns(connectionId, schema, tableName);
-  if ("error" in columnsResult) return { error: columnsResult.error };
-  const allowed = new Set(columnsResult.data.map((c) => c.name));
-  if (!allowed.has(primaryKeyColumn)) {
-    return { error: "Invalid primary key column." };
-  }
-
-  const qualified = `${quoteIdent(schema)}.${quoteIdent(tableName)}`;
-
-  let client;
-  try {
-    client = await getClient(record.encryptedConnectionString);
-    const result = await client.query(
-      `DELETE FROM ${qualified} WHERE ${quoteIdent(
-        primaryKeyColumn
-      )} = $1 RETURNING *`,
-      [primaryKeyValue]
-    );
-    if (result.rows.length === 0) {
-      return { error: "Row not found." };
-    }
-    const deletedRow = result.rows[0] as TableRow;
-    await recordActivity({
-      userId: session.user.id,
-      connectionId,
-      action: "row.delete",
-      success: true,
-      detail: tableName,
-    });
-    revalidatePath(`/db/${connectionId}/table/${tableName}`);
-
-    // The RETURNING clause gave us the just-deleted row, which is exactly
-    // what an undo would need to re-INSERT.
-    const undo = await recordUndo({
-      connectionId,
-      schema,
-      tableName,
-      primaryKeyColumn,
-      primaryKeyValue,
-      operation: "delete",
-      previousValues: deletedRow,
-    });
-    return { data: { deleted: deletedRow, undo } };
-  } catch (err) {
-    console.error("deleteRow failed", err);
-    await recordActivity({
-      userId: session.user.id,
-      connectionId,
-      action: "row.delete",
-      success: false,
-      detail: summarizeForAuditLog("delete", err),
-    });
-    return { error: redactErrorMessage(err) };
-  } finally {
-    if (client) {
+      let client;
       try {
-        await client.end();
-      } catch {
-        // ignore
+        client = await getClient(record.encryptedConnectionString);
+        const result = await client.query(
+          `DELETE FROM ${qualified} WHERE ${quoteIdent(
+            primaryKeyColumn
+          )} = $1 RETURNING *`,
+          [primaryKeyValue]
+        );
+        if (result.rows.length === 0) {
+          return { error: "Row not found." };
+        }
+        const deletedRow = result.rows[0] as TableRow;
+        await recordActivity({
+          userId: session.user.id,
+          connectionId,
+          action: "row.delete",
+          success: true,
+          detail: tableName,
+        });
+        revalidatePath(`/db/${connectionId}/table/${tableName}`);
+
+        // The RETURNING clause gave us the just-deleted row, which is
+        // exactly what an undo would need to re-INSERT.
+        const undo = await recordUndo({
+          connectionId,
+          schema,
+          tableName,
+          primaryKeyColumn,
+          primaryKeyValue,
+          operation: "delete",
+          previousValues: deletedRow,
+        });
+        return { data: { deleted: deletedRow, undo } };
+      } catch (err) {
+        console.error("deleteRow failed", err);
+        await recordActivity({
+          userId: session.user.id,
+          connectionId,
+          action: "row.delete",
+          success: false,
+          detail: summarizeForAuditLog("delete", err),
+        });
+        return { error: redactErrorMessage(err) };
+      } finally {
+        if (client) {
+          try {
+            await client.end();
+          } catch {
+            // ignore
+          }
+        }
       }
     }
-  }
+  );
 }
 

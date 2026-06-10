@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TableInfo } from "@/server/actions/schema";
-import type { ConnectionHealth as ConnectionHealthType } from "@/server/actions/activity";
+import type { ConnectionHealthSnapshot } from "@/server/actions/activity";
 import type { Environment } from "@/lib/validations";
 import { ConnectionHealth } from "./ConnectionHealth";
 import { EnvironmentSettings } from "./EnvironmentSettings";
@@ -30,7 +30,7 @@ export function SchemaTree({
   connectionId: string;
   connectionName: string;
   tables: TableInfo[];
-  health: ConnectionHealthType;
+  health: ConnectionHealthSnapshot;
   isDemo: boolean;
   environment: Environment;
   readOnly: boolean;

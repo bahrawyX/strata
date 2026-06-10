@@ -24,6 +24,7 @@ import { getOptionalSession, requireSession } from "./session";
 // to get the canonical types. (Next 16's "use server" actions compiler
 // refuses to re-export types from a "use server" file, so the previous
 // `export type { ActionResult }` pattern broke the build.)
+import { SIGN_IN_TO_CONTINUE, SIGN_IN_TO_MAKE_CHANGES } from "@/lib/server-actions";
 import type { ActionResult } from "@/lib/server-actions";
 import { getConnectionRecordForUser } from "@/lib/server-actions";
 
@@ -129,7 +130,7 @@ export async function getConnectionById(
   }
   const session = await getOptionalSession().catch(() => null);
   if (!session) {
-    return { error: "Sign in to view that connection." };
+    return { error: SIGN_IN_TO_CONTINUE };
   }
   try {
     const [row] = await db
@@ -159,7 +160,7 @@ export async function deleteConnection(
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to manage connections." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
   try {
     const result = await db
@@ -198,7 +199,7 @@ export async function testConnection(
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to test connections." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
   let client;
   const startedAt = Date.now();
@@ -288,7 +289,7 @@ export async function rotateConnectionString(input: {
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to rotate connections." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
 
   // Existence + ownership check up-front so an unauthorized id can't even
@@ -367,7 +368,7 @@ export async function updateConnectionEnvironment(input: {
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to manage connections." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
   try {
     const [row] = await db
@@ -410,7 +411,7 @@ export async function toggleConnectionReadOnly(input: {
   try {
     session = await requireSession();
   } catch {
-    return { error: "Sign in to manage connections." };
+    return { error: SIGN_IN_TO_MAKE_CHANGES };
   }
   try {
     const [row] = await db

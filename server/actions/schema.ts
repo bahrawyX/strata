@@ -9,10 +9,8 @@ import {
   isDemoConnectionId,
 } from "@/lib/demo-data";
 import { getOptionalSession } from "./session";
-import {
-  getConnectionRecordForUser,
-  type ActionResult,
-} from "@/lib/server-actions";
+import { getConnectionRecordForUser,
+  type ActionResult, SIGN_IN_TO_CONTINUE } from "@/lib/server-actions";
 
 export type ColumnInfo = {
   name: string;
@@ -67,7 +65,7 @@ export async function getTables(
   }
   const session = await getOptionalSession().catch(() => null);
   if (!session) {
-    return { error: "Sign in to inspect real schemas." };
+    return { error: SIGN_IN_TO_CONTINUE };
   }
   const record = await getConnectionRecordForUser(
     connectionId,
@@ -130,7 +128,7 @@ export async function getTableColumns(
   }
   const session = await getOptionalSession().catch(() => null);
   if (!session) {
-    return { error: "Sign in to inspect real tables." };
+    return { error: SIGN_IN_TO_CONTINUE };
   }
   const record = await getConnectionRecordForUser(
     connectionId,
@@ -205,7 +203,7 @@ export async function getDbStats(
   }
   const session = await getOptionalSession().catch(() => null);
   if (!session) {
-    return { error: "Sign in to inspect real databases." };
+    return { error: SIGN_IN_TO_CONTINUE };
   }
   const record = await getConnectionRecordForUser(
     connectionId,
@@ -331,7 +329,7 @@ export async function getSchemaForDiagram(
   }
   const session = await getOptionalSession().catch(() => null);
   if (!session) {
-    return { error: "Sign in to inspect real schemas." };
+    return { error: SIGN_IN_TO_CONTINUE };
   }
   const record = await getConnectionRecordForUser(
     connectionId,
