@@ -33,12 +33,21 @@ export function relativeTime(date: Date | string | null | undefined): string {
   return `${Math.floor(months / 12)}y ago`;
 }
 
-export function truncate(value: string, max: number): string {
-  if (value.length <= max) return value;
-  return value.slice(0, max) + "…";
-}
-
-export function maskConnectionString(value: string): string {
-  if (value.length <= 30) return value;
-  return value.slice(0, 30) + "…";
+/**
+ * Detect macOS so we can render ⌘ vs Ctrl in keyboard hints. Falls back
+ * gracefully when navigator.platform is empty (Chrome privacy-budget mode
+ * and most modern browsers eventually).
+ */
+export function isMacPlatform(): boolean {
+  if (typeof navigator === "undefined") return false;
+  type WithUAData = Navigator & {
+    userAgentData?: { platform?: string };
+  };
+  const uad = (navigator as WithUAData).userAgentData;
+  const candidate =
+    uad?.platform ||
+    navigator.platform ||
+    navigator.userAgent ||
+    "";
+  return /Mac|iPhone|iPad/i.test(candidate);
 }

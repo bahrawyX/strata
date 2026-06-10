@@ -20,14 +20,10 @@ type Mode = "view" | "edit";
  *    components/bahrawy/schema.tsx.
  */
 export function SchemaCanvas({
-  connectionId,
   initialTables,
 }: {
-  connectionId: string;
   initialTables: SchemaTable[];
 }) {
-  void connectionId;
-
   const [mode, setMode] = useState<Mode>("view");
   const [tables, setTables] = useState<SchemaTable[]>(initialTables);
   const [fullscreen, setFullscreen] = useState(false);

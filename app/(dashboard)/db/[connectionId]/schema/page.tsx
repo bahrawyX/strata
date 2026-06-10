@@ -23,10 +23,5 @@ export default async function SchemaPage({
     );
   }
 
-  return (
-    <SchemaCanvas
-      connectionId={connectionId}
-      initialTables={schema.data}
-    />
-  );
+  return <SchemaCanvas initialTables={schema.data} />;
 }

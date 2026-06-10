@@ -12,8 +12,10 @@ import { redactErrorMessage, summarizeForAuditLog } from "@/lib/redact";
 import { READ_ONLY_REFUSAL } from "@/lib/write-guard";
 import { isDemoConnectionId } from "@/lib/demo-data";
 import { getOptionalSession, requireSession } from "./session";
-import { getConnectionRecordForUser } from "./connections";
-import type { ActionResult } from "./connections";
+import {
+  getConnectionRecordForUser,
+  type ActionResult,
+} from "@/lib/server-actions";
 
 const UNDO_TTL_MS = 5 * 60 * 1000; // 5 minutes
 

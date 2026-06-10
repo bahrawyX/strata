@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import type { SchemaTableDiagram } from "@/server/actions/schema";
+import { mapAnthropicError } from "./errors";
 
 const CopilotResponseSchema = z.object({
   sql: z
@@ -191,46 +192,4 @@ export async function askCopilot(input: {
   }
 }
 
-function mapAnthropicError(err: unknown): {
-  ok: false;
-  error: string;
-  recoverable: boolean;
-} {
-  if (err instanceof Anthropic.AuthenticationError) {
-    return {
-      ok: false,
-      error: "ANTHROPIC_API_KEY is invalid. Check the server config.",
-      recoverable: false,
-    };
-  }
-  if (err instanceof Anthropic.RateLimitError) {
-    return {
-      ok: false,
-      error: "Rate limited by the API. Try again in a few seconds.",
-      recoverable: true,
-    };
-  }
-  if (err instanceof Anthropic.APIError) {
-    console.error("askCopilot APIError", err.status, err.message);
-    // 529 = overloaded — recoverable; 5xx in general is recoverable.
-    if (err.status === 529 || (err.status && err.status >= 500)) {
-      return {
-        ok: false,
-        error: "The API is overloaded right now. Try again in a few seconds.",
-        recoverable: true,
-      };
-    }
-    return {
-      ok: false,
-      error:
-        "The co-pilot couldn't complete that request. Try rephrasing or check back later.",
-      recoverable: true,
-    };
-  }
-  console.error("askCopilot unknown error", err);
-  return {
-    ok: false,
-    error: "Something went wrong calling the co-pilot.",
-    recoverable: true,
-  };
-}
+// mapAnthropicError now lives in @/lib/ai/errors (shared with insights).

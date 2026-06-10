@@ -8,7 +8,7 @@ import {
   isDemoConnectionId,
 } from "@/lib/demo-data";
 import { getOptionalSession } from "./session";
-import type { ActionResult } from "./connections";
+import type { ActionResult } from "@/lib/server-actions";
 
 export type ActivityRow = {
   id: string;

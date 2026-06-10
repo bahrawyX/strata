@@ -13,7 +13,7 @@ import {
   isDemoConnectionId,
 } from "@/lib/demo-data";
 import { getOptionalSession, requireSession } from "./session";
-import type { ActionResult } from "./connections";
+import type { ActionResult } from "@/lib/server-actions";
 
 /**
  * The shape we hand back to the UI. Identical to the schema row but with a

@@ -18,7 +18,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, isMacPlatform } from "@/lib/utils";
 import { askSqlCopilot } from "@/server/actions/copilot";
 import type { CopilotResponse, CopilotUsage } from "@/lib/ai/copilot";
 
@@ -54,8 +54,7 @@ export function CopilotPanel({ connectionId, onInsert, onReplace }: Props) {
       // Mod+/ opens the co-pilot. Mod+K is reserved for the global
       // command palette (components/layout/CommandPalette.tsx). Binding
       // both to Mod+K would race on the same keypress.
-      const isMac = navigator.platform.toLowerCase().includes("mac");
-      const isCmd = isMac ? e.metaKey : e.ctrlKey;
+      const isCmd = isMacPlatform() ? e.metaKey : e.ctrlKey;
       if (isCmd && e.key === "/") {
         e.preventDefault();
         setOpen((o) => !o);

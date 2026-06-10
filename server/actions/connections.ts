@@ -19,7 +19,13 @@ import { recordActivity } from "@/lib/activity";
 import { summarizeForAuditLog } from "@/lib/redact";
 import { getOptionalSession, requireSession } from "./session";
 
-export type ActionResult<T> = { data: T } | { error: string };
+// ActionResult + getConnectionRecordForUser now live in lib/server-actions
+// so other action files don't have to import the connections module just
+// to get the canonical types. (Next 16's "use server" actions compiler
+// refuses to re-export types from a "use server" file, so the previous
+// `export type { ActionResult }` pattern broke the build.)
+import type { ActionResult } from "@/lib/server-actions";
+import { getConnectionRecordForUser } from "@/lib/server-actions";
 
 export type ConnectionSummary = {
   id: string;
@@ -341,17 +347,7 @@ export async function rotateConnectionString(input: {
   }
 }
 
-export async function getConnectionRecordForUser(
-  id: string,
-  userId: string
-): Promise<typeof connections.$inferSelect | null> {
-  const [row] = await db
-    .select()
-    .from(connections)
-    .where(and(eq(connections.id, id), eq(connections.userId, userId)))
-    .limit(1);
-  return row ?? null;
-}
+// (getConnectionRecordForUser moved to lib/server-actions — see above.)
 
 export async function updateConnectionEnvironment(input: {
   connectionId: string;

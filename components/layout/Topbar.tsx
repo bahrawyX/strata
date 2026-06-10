@@ -8,6 +8,7 @@ import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { authClient } from "@/lib/auth-client";
+import { isMacPlatform } from "@/lib/utils";
 import { signOutDemo } from "@/server/actions/demo-auth";
 
 export type ViewerProp =
@@ -98,11 +99,11 @@ export function Topbar({ viewer }: { viewer: ViewerProp }) {
 
 function CmdKHint() {
   // Mod-aware label: Cmd on Apple, Ctrl elsewhere. Determined client-side
-  // from navigator.platform so it doesn't flash the wrong key on first
+  // from isMacPlatform() (userAgentData → platform → userAgent) so it
   // paint.
   const [isMac, setIsMac] = useState(false);
   useEffect(() => {
-    setIsMac(/Mac|iPhone|iPad/i.test(navigator.platform || ""));
+    setIsMac(isMacPlatform());
   }, []);
   return (
     <button

@@ -12,8 +12,10 @@ import { redactErrorMessage, summarizeForAuditLog } from "@/lib/redact";
 import { READ_ONLY_REFUSAL, isDestructiveSql } from "@/lib/write-guard";
 import { parseSqlErrorPosition } from "@/lib/sql-editor-tools";
 import { getOptionalSession } from "./session";
-import { getConnectionRecordForUser } from "./connections";
-import type { ActionResult } from "./connections";
+import {
+  getConnectionRecordForUser,
+  type ActionResult,
+} from "@/lib/server-actions";
 
 export type QueryField = {
   name: string;

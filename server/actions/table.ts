@@ -15,9 +15,9 @@ import { redactErrorMessage, summarizeForAuditLog } from "@/lib/redact";
 import { READ_ONLY_REFUSAL } from "@/lib/write-guard";
 import { recordUndo, type UndoSummary } from "./undo";
 import { getOptionalSession, requireSession } from "./session";
-import { getConnectionRecordForUser } from "./connections";
+import { getConnectionRecordForUser } from "@/lib/server-actions";
 import { getTableColumns, type ColumnInfo } from "./schema";
-import type { ActionResult } from "./connections";
+import type { ActionResult } from "@/lib/server-actions";
 
 export type TableRow = Record<string, unknown>;
 

@@ -21,8 +21,10 @@ import {
 } from "@/lib/validations";
 import { z } from "zod";
 import { getOptionalSession } from "./session";
-import { getConnectionRecordForUser } from "./connections";
-import type { ActionResult } from "./connections";
+import {
+  getConnectionRecordForUser,
+  type ActionResult,
+} from "@/lib/server-actions";
 
 const EXPORT_ROW_CAP = 10_000;
 

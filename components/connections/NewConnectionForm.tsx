@@ -11,9 +11,9 @@ import { cn } from "@/lib/utils";
 import { newConnectionSchema } from "@/lib/validations";
 import {
   createConnection,
-  type ActionResult,
   type ConnectionSummary,
 } from "@/server/actions/connections";
+import type { ActionResult } from "@/lib/server-actions";
 
 type DbType = "neon" | "supabase" | "postgres";
 

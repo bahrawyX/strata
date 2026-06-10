@@ -9,8 +9,10 @@ import {
   isDemoConnectionId,
 } from "@/lib/demo-data";
 import { getOptionalSession } from "./session";
-import { getConnectionRecordForUser } from "./connections";
-import type { ActionResult } from "./connections";
+import {
+  getConnectionRecordForUser,
+  type ActionResult,
+} from "@/lib/server-actions";
 
 export type ColumnInfo = {
   name: string;

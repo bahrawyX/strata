@@ -14,6 +14,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import type { ColumnInfo } from "@/server/actions/schema";
+import { mapAnthropicError } from "./errors";
 
 const SuggestedQuerySchema = z.object({
   name: z
@@ -163,39 +164,6 @@ export async function generateTableInsights(input: {
     const cached = (response.usage?.cache_read_input_tokens ?? 0) > 0;
     return { ok: true, data: parsed, cached };
   } catch (err) {
-    return mapAnthropicError(err);
+    return mapAnthropicError(err, "insights");
   }
-}
-
-function mapAnthropicError(err: unknown): {
-  ok: false;
-  error: string;
-  recoverable: boolean;
-} {
-  if (err instanceof Anthropic.AuthenticationError) {
-    return {
-      ok: false,
-      error: "ANTHROPIC_API_KEY is invalid. Check the server config.",
-      recoverable: false,
-    };
-  }
-  if (err instanceof Anthropic.RateLimitError) {
-    return {
-      ok: false,
-      error: "Rate limited by the AI API. Try again in a few seconds.",
-      recoverable: true,
-    };
-  }
-  if (err instanceof Anthropic.APIError) {
-    return {
-      ok: false,
-      error: "The AI service returned an error. Try again shortly.",
-      recoverable: true,
-    };
-  }
-  return {
-    ok: false,
-    error: "Unexpected error generating insights.",
-    recoverable: true,
-  };
 }
