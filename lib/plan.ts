@@ -128,6 +128,92 @@ export async function incrementCopilotUsage(plan: ViewerPlan): Promise<void> {
     });
 }
 
+/**
+ * Atomic quota gate. Combines the "is the user over their daily cap?" check
+ * with the increment so N parallel requests can't all read the same
+ * pre-incremented value and slip past the limit. Returns:
+ *   { ok: true,  used }            → consumed; caller may proceed
+ *   { ok: false, used, limit }     → over quota; caller should refuse
+ *
+ * For real users, this is one upsert with a WHERE clause on the conflict
+ * branch — Postgres serializes it. For demo users the cookie-counter is
+ * still inherently best-effort (and deletable by the client), so the
+ * race there isn't worth the complexity; we fall back to the
+ * read-then-increment path for them.
+ */
+export type ConsumeQuotaResult =
+  | { ok: true; used: number }
+  | { ok: false; used: number; limit: number };
+
+export async function tryConsumeCopilotQuota(
+  plan: ViewerPlan
+): Promise<ConsumeQuotaResult> {
+  if (plan.copilotLimit === Number.POSITIVE_INFINITY) {
+    // Pro tier — no quota.
+    await incrementCopilotUsage(plan);
+    return { ok: true, used: plan.copilotUsedToday + 1 };
+  }
+
+  if (plan.tier === "demo") {
+    if (plan.copilotUsedToday >= plan.copilotLimit) {
+      return {
+        ok: false,
+        used: plan.copilotUsedToday,
+        limit: plan.copilotLimit,
+      };
+    }
+    await writeDemoCopilotCount(plan.copilotUsedToday + 1);
+    return { ok: true, used: plan.copilotUsedToday + 1 };
+  }
+
+  if (!plan.viewer || plan.viewer.source !== "real") {
+    // No identified user — treat as over-quota rather than burn tokens.
+    return {
+      ok: false,
+      used: plan.copilotUsedToday,
+      limit: plan.copilotLimit,
+    };
+  }
+
+  const today = isoDay(new Date());
+  const limit = plan.copilotLimit;
+
+  try {
+    // Single upsert that ONLY increments when count < limit. If we're
+    // already at the cap, the WHERE clause filters out the UPDATE and
+    // RETURNING yields zero rows — that's the over-quota signal.
+    //
+    // Race-safety: Postgres ON CONFLICT acquires a row-level lock on the
+    // conflicting row, so two concurrent inserts serialize through this
+    // statement.
+    //
+    // Hand-written SQL because Drizzle's pg-core API has shifted around
+    // ON CONFLICT DO UPDATE WHERE across versions — raw SQL is portable.
+    const result = await db.execute<{ count: number }>(sql`
+      INSERT INTO ai_usage (user_id, day, count, updated_at)
+      VALUES (${plan.viewer.id}, ${today}, 1, now())
+      ON CONFLICT (user_id, day)
+      DO UPDATE SET count = ai_usage.count + 1, updated_at = now()
+      WHERE ai_usage.count < ${limit}
+      RETURNING count
+    `);
+
+    // neon-http returns { rows }; pg returns { rows } too.
+    const rows = ((result as unknown as { rows?: { count: number }[] }).rows ??
+      (result as unknown as { count: number }[])) as { count: number }[];
+    if (rows.length === 0) {
+      return { ok: false, used: limit, limit };
+    }
+    return { ok: true, used: Number(rows[0].count) };
+  } catch (err) {
+    console.error("tryConsumeCopilotQuota failed", err);
+    // Defensive: don't let a counter outage block paid users. Treat the
+    // write failure as "over quota" so we don't burn tokens behind the
+    // user's back.
+    return { ok: false, used: plan.copilotUsedToday, limit };
+  }
+}
+
 async function readDemoCopilotCount(): Promise<number> {
   try {
     const jar = await cookies();

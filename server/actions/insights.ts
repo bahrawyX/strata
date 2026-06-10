@@ -5,7 +5,7 @@ import {
   generateTableInsights,
   type InsightsResult,
 } from "@/lib/ai/insights";
-import { getViewerPlan, incrementCopilotUsage } from "@/lib/plan";
+import { getViewerPlan, tryConsumeCopilotQuota } from "@/lib/plan";
 import { getConnectionById } from "./connections";
 import { getTableColumns } from "./schema";
 import { recordActivity } from "@/lib/activity";
@@ -46,16 +46,16 @@ export async function explainTable(input: {
     };
   }
 
+  // Atomic quota gate — same TOCTOU-safe consume pattern as askSqlCopilot.
   const plan = await getViewerPlan();
-  if (plan.copilotUsedToday >= plan.copilotLimit) {
-    const upgradeTier =
-      plan.tier === "demo" ? ("demo" as const) : ("free" as const);
+  const quota = await tryConsumeCopilotQuota(plan);
+  if (!quota.ok) {
     return {
       ok: false,
       error:
-        upgradeTier === "demo"
-          ? `You've used today's demo AI allowance (${plan.copilotLimit} requests).`
-          : `You've hit today's AI cap (${plan.copilotLimit} requests). Resets at midnight UTC.`,
+        plan.tier === "demo"
+          ? `You've used today's demo AI allowance (${quota.limit} requests).`
+          : `You've hit today's AI cap (${quota.limit} requests). Resets at midnight UTC.`,
       recoverable: false,
     };
   }
@@ -94,14 +94,14 @@ export async function explainTable(input: {
     connectionLabel: conn.data.name,
   });
 
+  // Resolve userId for the audit row — real viewers should land in their
+  // own activity feed, demo viewers stay anonymous.
+  const auditUserId =
+    plan.viewer?.source === "real" ? plan.viewer.id : null;
+
   if (result.ok) {
-    try {
-      await incrementCopilotUsage(plan);
-    } catch (err) {
-      console.error("incrementCopilotUsage failed", err);
-    }
     await recordActivity({
-      userId: null,
+      userId: auditUserId,
       connectionId: parsed.data.connectionId,
       action: "copilot.draft",
       success: true,
@@ -111,11 +111,21 @@ export async function explainTable(input: {
       ...result,
       usage: {
         tier: plan.tier,
-        used: plan.copilotUsedToday + 1,
+        used: quota.used,
         limit: plan.copilotLimit,
       },
     };
   }
+
+  // AI failure path — still record so the user sees the attempt in their
+  // activity feed, with a bucketed reason instead of the raw error.
+  await recordActivity({
+    userId: auditUserId,
+    connectionId: parsed.data.connectionId,
+    action: "copilot.draft",
+    success: false,
+    detail: `insights:${parsed.data.tableName}:failed`,
+  });
 
   return result;
 }

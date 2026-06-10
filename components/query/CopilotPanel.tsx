@@ -51,9 +51,12 @@ export function CopilotPanel({ connectionId, onInsert, onReplace }: Props) {
   // ⌘K / Ctrl+K toggles the panel.
   useEffect(() => {
     function handler(e: globalThis.KeyboardEvent) {
+      // Mod+/ opens the co-pilot. Mod+K is reserved for the global
+      // command palette (components/layout/CommandPalette.tsx). Binding
+      // both to Mod+K would race on the same keypress.
       const isMac = navigator.platform.toLowerCase().includes("mac");
       const isCmd = isMac ? e.metaKey : e.ctrlKey;
-      if (isCmd && e.key.toLowerCase() === "k") {
+      if (isCmd && e.key === "/") {
         e.preventDefault();
         setOpen((o) => !o);
       }
@@ -131,7 +134,7 @@ export function CopilotPanel({ connectionId, onInsert, onReplace }: Props) {
               ⌘
             </kbd>
             <kbd className="rounded border border-border bg-[var(--bg-surface)] px-1 py-0.5">
-              K
+              /
             </kbd>
           </span>
         </span>

@@ -6,7 +6,7 @@ import {
   type CopilotResult,
   type CopilotUsage,
 } from "@/lib/ai/copilot";
-import { getViewerPlan, incrementCopilotUsage } from "@/lib/plan";
+import { getViewerPlan, tryConsumeCopilotQuota } from "@/lib/plan";
 import { getConnectionById } from "./connections";
 import { getSchemaForDiagram } from "./schema";
 
@@ -34,29 +34,25 @@ export async function askSqlCopilot(input: {
     };
   }
 
-  // 1. Plan gate — check the viewer's quota BEFORE we pay for any tokens.
+  // 1. Atomic quota gate. Consume FIRST so concurrent requests can't all
+  //    pass a stale-read check and slip past the daily cap. If the call
+  //    fails, we'll refund on the Anthropic-error path below.
   const plan = await getViewerPlan();
-  if (plan.copilotUsedToday >= plan.copilotLimit) {
-    if (plan.tier === "pro") {
-      // Should not happen — pro limit is Infinity — but guard anyway.
-      return {
-        ok: false,
-        error: "Unexpected plan state. Try again in a few minutes.",
-        recoverable: true,
-      };
-    }
-    const upgradeTier = plan.tier === "demo" ? ("demo" as const) : ("free" as const);
+  const quota = await tryConsumeCopilotQuota(plan);
+  if (!quota.ok) {
+    const upgradeTier =
+      plan.tier === "demo" ? ("demo" as const) : ("free" as const);
     return {
       ok: false,
       error:
         upgradeTier === "demo"
-          ? `You've used today's demo allowance (${plan.copilotLimit} co-pilot drafts). Create a free account to keep going.`
-          : `You've hit today's co-pilot cap (${plan.copilotLimit} drafts). The counter resets at midnight UTC.`,
+          ? `You've used today's demo allowance (${quota.limit} co-pilot drafts). Create a free account to keep going.`
+          : `You've hit today's co-pilot cap (${quota.limit} drafts). The counter resets at midnight UTC.`,
       recoverable: false,
       upgrade: {
         tier: upgradeTier,
-        used: plan.copilotUsedToday,
-        limit: plan.copilotLimit,
+        used: quota.used,
+        limit: quota.limit,
       },
     };
   }
@@ -88,19 +84,12 @@ export async function askSqlCopilot(input: {
     connectionLabel: conn.data.name,
   });
 
-  // 4. On success, atomically increment today's counter and attach the
-  //    updated usage snapshot to the response.
+  // 4. Attach the post-consume usage snapshot. (We already incremented in
+  //    step 1, so no second write is needed.)
   if (result.ok) {
-    try {
-      await incrementCopilotUsage(plan);
-    } catch (err) {
-      console.error("incrementCopilotUsage failed", err);
-      // We've already burned the tokens — surface the draft anyway, but
-      // skip the usage badge.
-    }
     const usage: CopilotUsage = {
       tier: plan.tier,
-      used: plan.copilotUsedToday + 1,
+      used: quota.used,
       limit: plan.copilotLimit,
     };
     return { ...result, usage };

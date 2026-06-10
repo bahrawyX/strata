@@ -353,6 +353,20 @@ export async function acceptInvite(input: {
       .limit(1);
     if (!invite) return { error: "This invite has expired or is invalid." };
 
+    // Email-bind the invite. Without this, a forwarded URL (Slack quote,
+    // browser history, a copy of the admin's UI) is a transferable bearer
+    // token to the team. The check is case-insensitive because email
+    // capitalization is generally non-significant.
+    if (
+      invite.email.toLowerCase() !==
+      session.user.email.toLowerCase()
+    ) {
+      return {
+        error:
+          "This invite isn't for your account. Sign in with the address it was sent to.",
+      };
+    }
+
     // Idempotent: if the caller is already a member, just succeed.
     const existing = await getRoleOrNull(invite.teamId, session.user.id);
     if (!existing) {

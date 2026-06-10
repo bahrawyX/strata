@@ -6,6 +6,8 @@ import { Loader2, Undo2, X } from "lucide-react";
 import { applyUndo } from "@/server/actions/undo";
 import { useRouter } from "next/navigation";
 
+const AUTO_HIDE_MS = 30_000;
+
 export type PendingUndo = {
   id: string;
   tableName: string;
@@ -31,15 +33,16 @@ export function UndoToast({ undo, onDismiss }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [autoHideAt] = useState<number>(() => Date.now() + 30_000);
 
-  // Auto-dismiss the toast 30s after mount. (The undo itself stays valid
-  // server-side for 5 minutes; the toast just gets out of the way.)
+  // Auto-dismiss 30s after each new undo arrives. (The undo itself stays
+  // valid server-side for 5 minutes; the toast just gets out of the way.)
+  // Key the timer on undo.id so a SECOND row edit fires a fresh 30s timer
+  // instead of inheriting the deadline from the first toast.
   useEffect(() => {
     if (!undo) return;
-    const t = window.setTimeout(() => onDismiss(), autoHideAt - Date.now());
+    const t = window.setTimeout(() => onDismiss(), AUTO_HIDE_MS);
     return () => window.clearTimeout(t);
-  }, [undo, autoHideAt, onDismiss]);
+  }, [undo?.id, onDismiss]);
 
   function doUndo() {
     if (!undo) return;

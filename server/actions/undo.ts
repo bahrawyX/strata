@@ -108,13 +108,17 @@ export async function applyUndo(
     return { error: "Sign in to undo edits." };
   }
 
-  // Read the undo row, scoped to the caller + not-expired.
+  // Atomically claim + read the undo row. Doing this as one DELETE …
+  // RETURNING (instead of SELECT then DELETE) means a concurrent click on
+  // the same undo loses the race cleanly — only one caller gets a row
+  // back, the other gets the "already applied" error. Without this,
+  // two concurrent applyUndo calls on a DELETE-undo would re-insert
+  // the row twice.
   const now = new Date();
   let undo;
   try {
     const [row] = await db
-      .select()
-      .from(pendingUndos)
+      .delete(pendingUndos)
       .where(
         and(
           eq(pendingUndos.id, undoId),
@@ -122,10 +126,10 @@ export async function applyUndo(
           gt(pendingUndos.expiresAt, now)
         )
       )
-      .limit(1);
+      .returning();
     undo = row;
   } catch (err) {
-    console.error("applyUndo (read) failed", err);
+    console.error("applyUndo (claim) failed", err);
     return { error: "Could not read the undo record." };
   }
   if (!undo) return { error: "This undo has expired or already been applied." };
