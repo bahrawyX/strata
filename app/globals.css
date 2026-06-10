@@ -463,4 +463,16 @@
     transform: translateY(20px);
     animation: fadeUp 0.6s var(--ease-out-expo) forwards;
   }
+  /* Respect prefers-reduced-motion. Without this, the landing-page slide-
+     up cascade fires on every load regardless of the user's OS setting —
+     a vestibular-sensitivity gap the motion-library Reveal components
+     already avoid via useReducedMotion(). */
+  @media (prefers-reduced-motion: reduce) {
+    .anim-line,
+    .anim-fade-up {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+  }
 }

@@ -1,6 +1,13 @@
 "use client";
 
-import { useMemo, useState, useTransition, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  type FormEvent,
+} from "react";
 import { motion } from "motion/react";
 import { Loader2, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -69,6 +76,56 @@ export function RowEditor({
   });
   const [error, setError] = useState<string | null>(null);
   const [submitting, startTransition] = useTransition();
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Modal a11y: Esc to close + restore focus to the element that opened
+  // the editor on unmount. Stops Tab from escaping by trapping it inside
+  // the panel (focus-cycle on first/last focusables).
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    // Move focus into the panel on mount.
+    const t = window.setTimeout(() => {
+      const first =
+        panelRef.current?.querySelector<HTMLElement>(
+          'input, textarea, select, button, [tabindex]:not([tabindex="-1"])'
+        ) ?? panelRef.current;
+      first?.focus();
+    }, 30);
+
+    function onKey(e: KeyboardEvent) {
+      if (submitting) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab" || !panelRef.current) return;
+      const focusable = Array.from(
+        panelRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => el.offsetParent !== null);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.clearTimeout(t);
+      window.removeEventListener("keydown", onKey);
+      // Restore focus to whatever the user clicked from. Use a microtask
+      // so the unmount transition can complete first.
+      queueMicrotask(() => previouslyFocused?.focus?.());
+    };
+  }, [onClose, submitting]);
 
   // JSON columns are flagged invalid here so we can disable submit + show an
   // inline error chip without an extra render pass per keystroke.
@@ -167,16 +224,22 @@ export function RowEditor({
         transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
       />
       <motion.div
+        ref={panelRef}
         className="relative z-10 w-full max-w-md h-full bg-card border-l border-border shadow-2xl flex flex-col"
         initial={{ x: "100%" }}
         animate={{ x: 0 }}
         exit={{ x: "100%" }}
         // Apple-style spring — same family the bahrawy Dialog uses.
         transition={{ type: "spring", stiffness: 360, damping: 36, mass: 0.6 }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="row-editor-title"
       >
         <div className="flex items-center justify-between px-5 h-14 border-b border-border">
           <div>
-            <h2 className="text-sm font-medium">{title}</h2>
+            <h2 id="row-editor-title" className="text-sm font-medium">
+              {title}
+            </h2>
             <p className="text-xs text-muted-foreground">{tableName}</p>
           </div>
           <Button

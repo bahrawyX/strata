@@ -198,19 +198,42 @@ function TeamDetail({
     });
   }
 
+  // Inline confirm — second click on the same trash icon executes the
+  // remove. Native confirm() is visually disconnected from the dark UI.
+  const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(
+    null
+  );
+  const [actionError, setActionError] = useState<string | null>(null);
+
   function handleRevoke(id: string) {
+    setActionError(null);
     startTransition(async () => {
       const res = await revokeInvite(id);
-      if ("error" in res) return;
+      if ("error" in res) {
+        setActionError(res.error);
+        return;
+      }
       router.refresh();
     });
   }
 
   function handleRemoveMember(userId: string) {
-    if (!confirm("Remove this member from the team?")) return;
+    if (confirmingRemoveId !== userId) {
+      setConfirmingRemoveId(userId);
+      // Auto-revert after 5s so the destructive state doesn't linger.
+      window.setTimeout(() => {
+        setConfirmingRemoveId((cur) => (cur === userId ? null : cur));
+      }, 5000);
+      return;
+    }
+    setActionError(null);
     startTransition(async () => {
       const res = await removeMember({ teamId: team.id, userId });
-      if ("error" in res) return;
+      if ("error" in res) {
+        setActionError(res.error);
+        return;
+      }
+      setConfirmingRemoveId(null);
       router.refresh();
     });
   }
@@ -219,13 +242,17 @@ function TeamDetail({
     userId: string,
     role: Exclude<TeamRole, "owner">
   ) {
+    setActionError(null);
     startTransition(async () => {
       const res = await updateMemberRole({
         teamId: team.id,
         userId,
         role,
       });
-      if ("error" in res) return;
+      if ("error" in res) {
+        setActionError(res.error);
+        return;
+      }
       router.refresh();
     });
   }
@@ -242,6 +269,11 @@ function TeamDetail({
 
   return (
     <div className="space-y-6">
+      {actionError && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {actionError}
+        </div>
+      )}
       <div className="rounded-lg border border-border bg-card">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div>
@@ -292,10 +324,27 @@ function TeamDetail({
                   type="button"
                   onClick={() => handleRemoveMember(m.userId)}
                   disabled={pending}
-                  className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                  title="Remove member"
+                  aria-label={
+                    confirmingRemoveId === m.userId
+                      ? `Click again to confirm removing ${m.name}`
+                      : `Remove ${m.name} from the team`
+                  }
+                  className={
+                    confirmingRemoveId === m.userId
+                      ? "rounded border border-destructive/40 bg-destructive/15 px-2 py-1 text-[11px] font-medium text-destructive hover:bg-destructive/25"
+                      : "rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  }
+                  title={
+                    confirmingRemoveId === m.userId
+                      ? "Click again to confirm"
+                      : "Remove member"
+                  }
                 >
-                  <UserMinus className="h-3.5 w-3.5" />
+                  {confirmingRemoveId === m.userId ? (
+                    "Confirm"
+                  ) : (
+                    <UserMinus className="h-3.5 w-3.5" />
+                  )}
                 </button>
               )}
             </li>

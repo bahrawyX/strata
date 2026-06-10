@@ -40,6 +40,9 @@ export function SavedQueriesPanel({
   const [tab, setTab] = useState<Tab>("saved");
   const [rows, setRows] = useState<SavedQueryRow[]>(initialRows);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(
+    null
+  );
   const [editName, setEditName] = useState("");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -89,8 +92,16 @@ export function SavedQueriesPanel({
     });
   }
 
-  function remove(id: string) {
-    if (!confirm("Delete this saved query? This cannot be undone.")) return;
+  function askDelete(id: string) {
+    setConfirmingDeleteId(id);
+    setError(null);
+  }
+
+  function cancelDelete() {
+    setConfirmingDeleteId(null);
+  }
+
+  function confirmDelete(id: string) {
     startTransition(async () => {
       const res = await deleteSavedQuery(id);
       if ("error" in res) {
@@ -98,6 +109,7 @@ export function SavedQueriesPanel({
         return;
       }
       setRows((prev) => prev.filter((r) => r.id !== id));
+      setConfirmingDeleteId(null);
     });
   }
 
@@ -237,16 +249,44 @@ export function SavedQueriesPanel({
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => remove(row.id)}
-                            disabled={pending}
-                            className="rounded p-1 text-muted-foreground hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)]"
-                            aria-label="Delete"
-                            title="Delete"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          {confirmingDeleteId === row.id ? (
+                            <div className="inline-flex items-center gap-1 rounded-md border border-destructive/40 bg-destructive/10 px-1 py-0.5">
+                              <span className="px-1 text-[11px] text-foreground">
+                                Delete?
+                              </span>
+                              <button
+                                type="button"
+                                onClick={cancelDelete}
+                                disabled={pending}
+                                className="rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+                              >
+                                No
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => confirmDelete(row.id)}
+                                disabled={pending}
+                                className="rounded bg-destructive px-1.5 py-0.5 text-[11px] text-white hover:opacity-90 disabled:opacity-60"
+                              >
+                                {pending ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  "Yes"
+                                )}
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => askDelete(row.id)}
+                              disabled={pending}
+                              className="rounded p-1 text-muted-foreground hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)]"
+                              aria-label="Delete"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
                         </>
                       )}
                     </div>

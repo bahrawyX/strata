@@ -359,7 +359,7 @@ function Row({
             </Button>
           </div>
         ) : (
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-0.5">
+          <div className="opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 focus-within:opacity-100 transition-opacity inline-flex items-center gap-0.5">
             <Button
               variant="ghost"
               size="icon-xs"
