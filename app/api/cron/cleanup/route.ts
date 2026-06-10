@@ -12,6 +12,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { activityLog, pendingUndos, teamInvites } from "@/lib/schema";
@@ -28,8 +29,18 @@ export async function GET(request: Request) {
     console.error("/api/cron/cleanup CRON_SECRET is not set");
     return new NextResponse("Cron not configured", { status: 500 });
   }
-  const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${secret}`) {
+  const auth = request.headers.get("authorization") ?? "";
+  const expected = `Bearer ${secret}`;
+  // Length-equal guard + timingSafeEqual so the auth check doesn't leak
+  // info about the secret via short-circuit `!==` timing variance.
+  // (Vercel's cold-start jitter dominates in practice, but defense-in-depth
+  // is cheap here.)
+  const authBuf = Buffer.from(auth);
+  const expectedBuf = Buffer.from(expected);
+  if (
+    authBuf.length !== expectedBuf.length ||
+    !timingSafeEqual(authBuf, expectedBuf)
+  ) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 

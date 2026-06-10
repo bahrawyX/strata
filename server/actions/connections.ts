@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { connections } from "@/lib/schema";
 import { encrypt } from "@/lib/crypto";
 import { getClient, testConnectionString } from "@/lib/user-db";
+import { READ_ONLY_REFUSAL } from "@/lib/write-guard";
 import {
   newConnectionSchema,
   rotateConnectionStringSchema,
@@ -291,6 +292,9 @@ export async function rotateConnectionString(input: {
     session.user.id
   );
   if (!record) return { error: "Connection not found." };
+  // Rotating the connection string is the most consequential write on a
+  // connection — refuse on read-only the same way the row + query writes do.
+  if (record.readOnly) return { error: READ_ONLY_REFUSAL };
 
   const test = await testConnectionString(parsed.data.newConnectionString);
   if (!test.ok) {

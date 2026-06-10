@@ -9,6 +9,8 @@ import {
   acceptInviteSchema,
   createTeamSchema,
   inviteToTeamSchema,
+  removeMemberSchema,
+  revokeInviteSchema,
   type TeamRole,
   updateMemberRoleSchema,
 } from "@/lib/validations";
@@ -299,6 +301,10 @@ export async function inviteToTeam(input: {
 export async function revokeInvite(
   inviteId: string
 ): Promise<ActionResult<{ id: string }>> {
+  const parsed = revokeInviteSchema.safeParse({ inviteId });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
   let session;
   try {
     session = await requireSession();
@@ -311,16 +317,16 @@ export async function revokeInvite(
     const [invite] = await db
       .select()
       .from(teamInvites)
-      .where(eq(teamInvites.id, inviteId))
+      .where(eq(teamInvites.id, parsed.data.inviteId))
       .limit(1);
     if (!invite) return { error: "Invite not found." };
     const role = await getRoleOrNull(invite.teamId, session.user.id);
     if (!role || !canManageMembers(role)) {
       return { error: "Only team admins can revoke invites." };
     }
-    await db.delete(teamInvites).where(eq(teamInvites.id, inviteId));
+    await db.delete(teamInvites).where(eq(teamInvites.id, parsed.data.inviteId));
     revalidatePath("/settings/team");
-    return { data: { id: inviteId } };
+    return { data: { id: parsed.data.inviteId } };
   } catch (err) {
     console.error("revokeInvite failed", err);
     return { error: "Could not revoke the invite." };
@@ -401,19 +407,23 @@ export async function removeMember(input: {
   teamId: string;
   userId: string;
 }): Promise<ActionResult<{ teamId: string; userId: string }>> {
+  const parsed = removeMemberSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
   let session;
   try {
     session = await requireSession();
   } catch {
     return { error: "Sign in to manage members." };
   }
-  const role = await getRoleOrNull(input.teamId, session.user.id);
+  const role = await getRoleOrNull(parsed.data.teamId, session.user.id);
   if (!role || !canManageMembers(role)) {
     return { error: "Only team admins can remove members." };
   }
   // Defensive: even an admin can't remove an owner. The owner has to
   // transfer ownership first (not implemented in this MVP).
-  const targetRole = await getRoleOrNull(input.teamId, input.userId);
+  const targetRole = await getRoleOrNull(parsed.data.teamId, parsed.data.userId);
   if (targetRole === "owner") {
     return { error: "Can't remove the team owner." };
   }
@@ -422,13 +432,13 @@ export async function removeMember(input: {
       .delete(teamMembers)
       .where(
         and(
-          eq(teamMembers.teamId, input.teamId),
-          eq(teamMembers.userId, input.userId)
+          eq(teamMembers.teamId, parsed.data.teamId),
+          eq(teamMembers.userId, parsed.data.userId)
         )
       );
     revalidatePath("/settings/team");
     return {
-      data: { teamId: input.teamId, userId: input.userId },
+      data: { teamId: parsed.data.teamId, userId: parsed.data.userId },
     };
   } catch (err) {
     console.error("removeMember failed", err);

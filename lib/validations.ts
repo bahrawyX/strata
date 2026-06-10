@@ -135,6 +135,15 @@ export const updateMemberRoleSchema = z.object({
   role: teamRoleSchema.exclude(["owner"]),
 });
 
+export const removeMemberSchema = z.object({
+  teamId: z.string().uuid(),
+  userId: z.string().min(1),
+});
+
+export const revokeInviteSchema = z.object({
+  inviteId: z.string().uuid(),
+});
+
 export const sqlQuerySchema = z.object({
   connectionId: z.string().uuid("Invalid connection id."),
   query: z
